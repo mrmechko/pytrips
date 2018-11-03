@@ -137,9 +137,17 @@ class TripsType(object):
             raise NotImplemented
 
     def __lt__(self, other):
+        if type(other) is str:
+            other = self.__ont[other]
+            if type(other) is not TripsType:
+                raise NotImplemented
         return other.subsumes(self)
 
     def __gt__(self, other):
+        if type(other) is str:
+            other = self.__ont[other]
+            if type(other) is not TripsType:
+                raise NotImplemented
         return self.subsumes(other)
 
     def __str__(self):
@@ -175,10 +183,7 @@ class TripsType(object):
         return self.lcs(other)
 
     def subsumes(self, other):
-        if type(other) is str:
-            other = ont[other]
-            if type(other) is not TripsType:
-                return False
+
         if other == "ont::root":
             return False
         elif other in self.children:
@@ -210,6 +215,18 @@ class TripsRestriction(object):
     @property
     def optionality(self):
         return self.__optionality
+
+    def __str__(self):
+        return "[:% %]" % (self.role, ", ".join(self.restrictions))
+
+    def __repr__(self):
+        res = ""
+        if self.restrictions:
+            res = self.restrictions[0]
+        post = ""
+        if len(self.restrictions) > 1:
+            post = "and {} others".format(len(self.restrictions)-1)
+        return "<TripsRestriction :{} {}{}>".format(self.role, res, post)
 
 
 def load():

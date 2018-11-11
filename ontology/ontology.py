@@ -1,10 +1,32 @@
 import json
 from collections import defaultdict as ddict
+import sys
 
 try:
     from nltk.corpus import wordnet as wn
+    from nltk.corpus.reader.wordnet import WordNetError
 except:
     wn = None
+
+
+def _is_query_pair(x):
+    if type(x) is tuple and len(x) == 2:
+        return (type(x[0]) in set([str, TripsType])) and (type(x[1] == str))
+    return False
+
+def get_wn_key(k):
+    if not wn:
+        return None
+    if k.startswith("wn::"):
+        k = k[4:]
+    while len(k.split(":")) < 5:
+        k += ":"
+    try:
+        return wn.lemma_from_key(k).synset()
+    except WordNetError:
+        print("no synset found for " + k, file=sys.stderr)
+        return None
+
 
 class Trips(object):
     def __init__(self, ontology, lexicon):
@@ -13,6 +35,7 @@ class Trips(object):
         # TODO: respect POS
         revwords = ddict(set)
         self.__words = ddict(set)
+        self.__wordnet_index = ddict(list)
         for word, entry in lexicon.items():
             for pos, values in entry.items():
                 self.__words[word.lower()].update([v["sense"].lower() for v in values])
@@ -31,6 +54,10 @@ class Trips(object):
                     self
                 )
             self.__data[t.name] = t
+            for k in s['wordnet']:
+                k = get_wn_key(k)
+                if k:
+                    self.__wordnet_index[k].append(t)
 
     def get_trips_type(self, name):
         """Get the trips type associated with the name"""
@@ -43,10 +70,32 @@ class Trips(object):
         word = word.split("w::")[-1].lower()
         return [self[x] for x in self.__words.get(word, [])]
 
-    def get_wordnet(self, wordnet):
+    def get_wordnet(self, key):
         """Get types provided by wordnet mappings"""
-        # TODO: This.
-        pass
+        if type(key) is str:
+            key = get_wn_key(key)
+        if not key:
+            return []
+        if key in self.__wordnet_index:
+            return self.__wordnet_index[key][:]
+        else:
+            res = set()
+            for k in key.hypernyms():
+                res.update(self.get_wordnet(k))
+            return list(res)
+
+    def lookup(self, word, pos): #TODO what kind of information does this need in general?
+        word = word.split("q::")[-1]
+        #1 get word lookup
+        w_look = self.get_word(word, pos=pos)
+        #2 get wordnet
+        wnlook = set()
+        if wn:
+            keys = wn.synsets(word, pos=pos)
+            for k in keys:
+                wnlook.update(self.get_wordnet(k))
+        return {"lex" : w_look, "wn": list(wnlook)}
+
 
     def __getitem__(self, key):
         """if the input is "w::x" lookup x as a word
@@ -54,6 +103,9 @@ class Trips(object):
         if the input is "wn::x" lookup x as a wordnet sense
         else lookup as an ont type.
         """
+        pos = None
+        if _is_query_pair(key):
+            key, pos = key
         if type(key) is TripsType:
             return key
         elif type(key) is not str:
@@ -62,9 +114,11 @@ class Trips(object):
             return None
         key = key.lower()
         if key.startswith("w::"):
-            return self.get_word(key)
+            return self.get_word(key, pos=pos)
         elif key.startswith("wn::"):
             return self.get_wordnet(key)
+        elif key.startswith("q::"):
+            return self.lookup(key, pos=pos)
         else:
             return self.get_trips_type(key)
 
@@ -94,6 +148,7 @@ class TripsType(object):
         self.__arguments = arguments
         self.__words = [w.lower() for w in words]
         self.__wordnet = [w.lower() for w in wordnet]
+        self.__wordnet_keys = [get_wn_key(s) for s in self.__wordnet if get_wn_key(s)]
         self.__ont = ont
         # TODO: set numerical id
 
@@ -127,6 +182,10 @@ class TripsType(object):
     def wordnet(self):
         return self.__wordnet[:]
 
+    @property
+    def wordnet_keys(self):
+        return self.__wordnet_keys[:]
+
     def __eq__(self, other):
         # XXX: does this cause problems with putting things in sets?
         if type(other) is TripsType:
@@ -154,7 +213,7 @@ class TripsType(object):
         return "ont::" + self.name
 
     def __hash__(self):
-        return hash("<TripsType {}>" % repr(self))
+        return hash("<TripsType %s>".format(repr(self)))
 
     def __repr__(self):
         return str(self)
@@ -217,7 +276,7 @@ class TripsRestriction(object):
         return self.__optionality
 
     def __str__(self):
-        return "[:% %]" % (self.role, ", ".join(self.restrictions))
+        return "[:%s %s]".format(self.role, ", ".join(self.restrictions))
 
     def __repr__(self):
         res = ""

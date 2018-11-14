@@ -32,15 +32,14 @@ class Trips(object):
     def __init__(self, ontology, lexicon):
         self.__data = {}
         self.__data['root'] = TripsType("root", None, [], [], [], [], self)
-        # TODO: respect POS
         revwords = ddict(set)
-        self.__words = ddict(set)
+        self.__words = ddict(lambda: ddict(set))
         self.__wordnet_index = ddict(list)
         for word, entry in lexicon.items():
             for pos, values in entry.items():
-                self.__words[word.lower()].update([v["sense"].lower() for v in values])
+                self.__words[pos.lower()][word.lower()].update([v["sense"].lower() for v in values])
                 for val in [v["sense"].lower() for v in values]:
-                    revwords[val].add(word.lower())
+                    revwords[val].add((word+"."+pos).lower())
 
         for s in ontology:
             arguments = [TripsRestriction(x["role"], x["restrictions"], str(x["optionality"]), self) for x in s['arguments']]
@@ -66,9 +65,14 @@ class Trips(object):
 
     def get_word(self, word, pos=None):
         """Lookup all possible types for a word."""
-        # TODO: Restrict by POS
         word = word.split("w::")[-1].lower()
-        return [self[x] for x in self.__words.get(word, [])]
+        if pos:
+            index = self.__words[pos][word]
+        else:
+            index = set()
+            for pos, words in self.__words.items():
+                index.update(words[word])
+        return [self[x] for x in index]
 
     def get_wordnet(self, key):
         """Get types provided by wordnet mappings"""

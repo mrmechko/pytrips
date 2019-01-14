@@ -11,7 +11,7 @@ setup(
     description="A simple python package for accessing the trips ontology and lexicon",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/mrmechko/simpletrips",
+    url="https://github.com/mrmechko/pytrips",
     packages=find_namespace_packages(include=["pytrips.*"]),
     classifiers=[
         "Programming Language :: Python :: 3",

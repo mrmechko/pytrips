@@ -30,6 +30,7 @@ def get_wn_key(k):
 
 class Trips(object):
     def __init__(self, ontology, lexicon):
+        ontology = ontology.values() # used to be a list, now is a dict
         self.__data = {}
         self.__data['root'] = TripsType("root", None, [], [], [], [], self)
         revwords = ddict(set)
@@ -42,18 +43,18 @@ class Trips(object):
                     revwords[val].add((word+"."+pos).lower())
 
         for s in ontology:
-            arguments = [TripsRestriction(x["role"], x["restrictions"], str(x["optionality"]), self) for x in s['arguments']]
+            arguments = [TripsRestriction(x["role"], x["restriction"], str(x["optionality"]), self) for x in s.get('arguments', [])]
             t = TripsType(
                     s['name'],
-                    s['parent'],
-                    s['children'],
+                    s.get('parent', "ROOT"),
+                    s.get('children', []),
                     list(revwords[s['name'].lower()]),
-                    s['wordnet'],
+                    s.get('wordnet_sense_keys', []),
                     arguments,
                     self
                 )
             self.__data[t.name] = t
-            for k in s['wordnet']:
+            for k in s.get('wordnet_sense_keys', []):
                 k = get_wn_key(k)
                 if k:
                     self.__wordnet_index[k].append(t)
@@ -137,7 +138,7 @@ class TripsType(object):
     Note: in order for the operations to work, at least one of the
     types must explicitly be a TripsType
     type: t, str: s
-    equality: t1 == t2, t1 == s 
+    equality: t1 == t2, t1 == s
     subsumption: t1 < t2, s1 < t2, t1 < s2
     lcs: t1 ^ t2, s1 ^ t2, t1 ^ s2
     """
@@ -226,7 +227,7 @@ class TripsType(object):
         if self == "ont::root":
             return [self]
         else:
-            return [self] + self.parent.path_to_root() 
+            return [self] + self.parent.path_to_root()
 
     def lcs(self, other):
         if type(other) is str:
@@ -293,6 +294,6 @@ class TripsRestriction(object):
 
 
 def load():
-    ont = json.load(open("data/ontology.json"))
+    ont = json.load(open("json/ontology.json"))
     lex = json.load(open("data/lexicon.json"))
     return Trips(ont, lex)

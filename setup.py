@@ -31,7 +31,7 @@ if __name__ == '__main__':
         ],
         install_requires=["nltk"],
         cmdclass={
-            "install": EnsureWordnet
+            "install": EnsureWordnet,
             "develop": EnsureWordnet
         },
     )

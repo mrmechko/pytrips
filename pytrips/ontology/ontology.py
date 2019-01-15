@@ -1,4 +1,4 @@
-import json
+import jsontrips
 from collections import defaultdict as ddict
 import sys
 
@@ -294,6 +294,6 @@ class TripsRestriction(object):
 
 
 def load():
-    ont = json.load(open("json/ontology.json"))
-    lex = json.load(open("data/lexicon.json"))
+    ont = jsontrips.ontology()
+    lex = jsontrips.lexicon()
     return Trips(ont, lex)

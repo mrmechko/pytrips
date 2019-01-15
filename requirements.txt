@@ -1,1 +1,2 @@
 nltk
+git+git://github.com/mrmechko/jsontrips

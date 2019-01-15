@@ -36,11 +36,20 @@ class Trips(object):
         revwords = ddict(set)
         self.__words = ddict(lambda: ddict(set))
         self.__wordnet_index = ddict(list)
-        for word, entry in lexicon.items():
-            for pos, values in entry.items():
-                self.__words[pos.lower()][word.lower()].update([v["sense"].lower() for v in values])
-                for val in [v["sense"].lower() for v in values]:
-                    revwords[val].add((word+"."+pos).lower())
+        for word, entry_list in lexicon.items():
+            for entry in entry_list:
+                name = entry["name"].lower()
+                #cat = entry["cat"].lower()
+                entries = entry["entries"]
+                pos = entries['pos'].lower()
+                # TODO: incorporate the lexicon
+                for values in entries["senses"]:
+                    if "lf_parent" not in values.keys():
+                        c = "no_parent"
+                    else:
+                        c = values["lf_parent"].lower()
+                    self.__words[pos][word.lower()].add(c)
+                    revwords[c].add((word+"."+pos).lower())
 
         for s in ontology:
             arguments = [TripsRestriction(x["role"], x["restriction"], str(x["optionality"]), self) for x in s.get('arguments', [])]

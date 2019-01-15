@@ -1,17 +1,27 @@
 from setuptools import setup, find_packages
 from setuptools.command.install import install
+from setuptools.command.develop import develop
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
+def install_wn(self):
+    import nltk
+    nltk.download("wordnet")
+    nltk.download("stopwords")
+
 class EnsureWordnet(install):
     """Post-installation for installation mode."""
     def run(self):
-        import nltk
-        print("Now installing wordnet")
-        nltk.download("wordnet")
-        nltk.download("stopwords")
         install.run(self)
+        install_wn()
+
+class EnsureWordnet(develop):
+    """Post-installation for installation mode."""
+    def run(self):
+        install.run(self)
+        install_wn()
+
 
 if __name__ == '__main__':
     setup(

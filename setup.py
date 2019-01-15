@@ -1,7 +1,17 @@
 from setuptools import setup, find_packages
+from setuptools.command.install import install
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
+
+class EnsureWordnet(install):
+    """Post-installation for installation mode."""
+    def run(self):
+        import nltk
+        print("Now installing wordnet")
+        nltk.download("wordnet")
+        nltk.download("stopwords")
+        install.run(self)
 
 setup(
     name="pytrips",
@@ -18,4 +28,5 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
+    cmdclass={"install": EnsureWordnet},
 )

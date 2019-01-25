@@ -9,6 +9,8 @@ class TripsType(object):
     equality: t1 == t2, t1 == s
     subsumption: t1 < t2, s1 < t2, t1 < s2
     lcs: t1 ^ t2, s1 ^ t2, t1 ^ s2
+
+    # WARNING: arguments are currently not loaded.  There is a raw dict there
     """
 
     def __init__(self, name, parent, children, words, wordnet, arguments, ont):

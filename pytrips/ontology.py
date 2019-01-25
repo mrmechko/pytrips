@@ -20,11 +20,11 @@ class Trips(object):
         revwords = ddict(set)
         self.__words = ddict(lambda: ddict(set))
         self.__wordnet_index = ddict(list)
-        for word, entry_list in lexicon.items():
+        for word, entry_list in lexicon["words"].items():
             for entry in entry_list:
                 name = entry["name"].lower()
                 #cat = entry["cat"].lower()
-                entries = entry["entries"]
+                entries = lexicon["entries"][entry["entry"]]
                 pos = entries['pos'].lower()
                 # TODO: incorporate the lexicon
                 for values in entries["senses"]:

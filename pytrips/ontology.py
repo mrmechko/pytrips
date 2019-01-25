@@ -2,30 +2,14 @@ import jsontrips
 from collections import defaultdict as ddict
 import sys
 
-try:
-    from nltk.corpus import wordnet as wn
-    from nltk.corpus.reader.wordnet import WordNetError
-except:
-    wn = None
+from .structures import TripsRestriction, TripsType
+from .helpers import wn, get_wn_key
 
 
 def _is_query_pair(x):
     if type(x) is tuple and len(x) == 2:
         return (type(x[0]) in set([str, TripsType])) and (type(x[1] == str))
     return False
-
-def get_wn_key(k):
-    if not wn:
-        return None
-    if k.startswith("wn::"):
-        k = k[4:]
-    while len(k.split(":")) < 5:
-        k += ":"
-    try:
-        return wn.lemma_from_key(k).synset()
-    except WordNetError:
-        print("no synset found for " + k, file=sys.stderr)
-        return None
 
 
 class Trips(object):
@@ -140,166 +124,6 @@ class Trips(object):
         """return an iterator with all the types."""
         # TODO: guarantee order
         return self.__data.values()
-
-
-class TripsType(object):
-    """
-    Note: in order for the operations to work, at least one of the
-    types must explicitly be a TripsType
-    type: t, str: s
-    equality: t1 == t2, t1 == s
-    subsumption: t1 < t2, s1 < t2, t1 < s2
-    lcs: t1 ^ t2, s1 ^ t2, t1 ^ s2
-    """
-
-    def __init__(self, name, parent, children, words, wordnet, arguments, ont):
-        self.__name = name.lower()
-        if parent:
-            self.__parent = parent.lower()
-        else:
-            self.__parent = None
-        self.__children = children
-        self.__arguments = arguments
-        self.__words = [w.lower() for w in words]
-        self.__wordnet = [w.lower() for w in wordnet]
-        self.__wordnet_keys = [get_wn_key(s) for s in self.__wordnet if get_wn_key(s)]
-        self.__ont = ont
-        # TODO: set numerical id
-
-    @property
-    def depth(self):
-        if self == "ont::root":
-            return 0
-        return self.parent.depth + 1
-
-    @property
-    def name(self):
-        return self.__name
-
-    @property
-    def parent(self):
-        return self.__ont[self.__parent]
-
-    @property
-    def children(self):
-        return [self.__ont[c] for c in self.__children]
-
-    @property
-    def arguments(self):
-        return self.__arguments[:]
-
-    @property
-    def words(self):
-        return self.__words[:]
-
-    @property
-    def wordnet(self):
-        return self.__wordnet[:]
-
-    @property
-    def wordnet_keys(self):
-        return self.__wordnet_keys[:]
-
-    def __eq__(self, other):
-        # XXX: does this cause problems with putting things in sets?
-        if type(other) is TripsType:
-            return self.name == other.name
-        elif type(other) is str:
-            return str(self) == other
-        else:
-            raise NotImplemented
-
-    def __lt__(self, other):
-        if type(other) is str:
-            other = self.__ont[other]
-            if type(other) is not TripsType:
-                raise NotImplemented
-        return other.subsumes(self)
-
-    def __gt__(self, other):
-        if type(other) is str:
-            other = self.__ont[other]
-            if type(other) is not TripsType:
-                raise NotImplemented
-        return self.subsumes(other)
-
-    def __str__(self):
-        return "ont::" + self.name
-
-    def __hash__(self):
-        return hash("<TripsType %s>".format(repr(self)))
-
-    def __repr__(self):
-        return str(self)
-
-    def path_to_root(self):
-        if self == "ont::root":
-            return [self]
-        else:
-            return [self] + self.parent.path_to_root()
-
-    def lcs(self, other):
-        if type(other) is str:
-            other = self.__ont[other]
-        if type(other) is not TripsType:
-            raise NotImplemented
-        t = reversed(self.path_to_root())
-        s = reversed(other.path_to_root())
-        lcs = self.__ont["root"]
-        pair = zip(t,s)
-        for p, q in pair:
-            if p == q:
-                lcs = p
-        return lcs
-
-    def __xor__(self, other):
-        return self.lcs(other)
-
-    def subsumes(self, other):
-
-        if other == "ont::root":
-            return False
-        elif other in self.children:
-            return True
-        else:
-            return self.subsumes(other.parent)
-
-class TripsRestriction(object):
-    def __init__(self, role, restrs, optionality, ont):
-        self.__ont = ont
-        self.__role = role
-        self.__restrs = set()
-        for x in restrs:
-            if type(x) is list:
-                self.__restrs.update(x[2:])
-            if type(x) is str:
-                self.__restrs.add(x)
-        self.__restrs = {x.lower() for x in self.__restrs}
-        self.__optionality = optionality
-
-    @property
-    def role(self):
-        return self.__role.lower()
-
-    @property
-    def restrictions(self):
-        return [x for x in [self.__ont[r] for r in self.__restrs] if x]
-
-    @property
-    def optionality(self):
-        return self.__optionality
-
-    def __str__(self):
-        return "[:%s %s]".format(self.role, ", ".join(self.restrictions))
-
-    def __repr__(self):
-        res = ""
-        if self.restrictions:
-            res = self.restrictions[0]
-        post = ""
-        if len(self.restrictions) > 1:
-            post = "and {} others".format(len(self.restrictions)-1)
-        return "<TripsRestriction :{} {}{}>".format(self.role, res, post)
 
 
 def load():

@@ -1,12 +1,13 @@
 language: python
 python:
-  - "3.4"
-  - "3.5"
-  - "3.6"
-# command to install dependencies
+- '3.4'
+- '3.5'
+- '3.6'
 install:
-  - pip install -r requirements.txt
-  - pip install .
-# command to run tests
+- pip install -r requirements.txt
+- pip install .
 script:
-  - pytest
+- pytest
+notifications:
+  slack:
+    secure: nBn4qmb4OjcvD20FGlApggyNzWQmfzssMUifi7Pwa0f3+TUCUqdrG4PDadEsAuxVvqn5bUmA+gwpahl00mpf3h7XYOtTCQ+GjYsO0P78lzMD1Rb0iJHo/vRzxmLuWqT1eCLxDq9icatt/uC71FxsLHRQNP7JnsekLw31QlytTehkTQdtDT7ijYiKMY2g1HTDG3iP26tzQSoGK0QZ5dmuKU02ipsn3vAsEP5JiI5rCtmSqEqRbZIed680KTbfNXaKPCZEaXtMNtFN7WmrIRNviuDmqTRvot3u7zxQfGZ5AjBSy1yEo4D6WsvZRWzGhEZODNGTozIcrurn4DoyydkausU7ceowwGA+lAPpla7laU5kDtwU531ZvVWPRfTZT6FQ6G1mYCyxuKdQ1Li2vgmceS/7t0Ij4waP3VP+skXH68iBp6rVHOC+VSNO93I9341phpcyZdw8MdZUGmpvgnWu1VBXLE9FYjYn6IBQWbjuEodUjyBihVfTQGI1bAENXVFsolUQaYAVE021ZOtsw4e22dS4x8jx4BfUW9J1X6P+BO8egP4FiGqBpTyzIKuoKhWj2jxVwicsVd9xFEJJsw70x/Sgf0q5dlLfb1atx286uK7eguSIyYzIJEEqFqMfeHj19KYaDzhqHi591wfjso1LnjPI+ZD+7Zi9mUcTJLBe9Y4=

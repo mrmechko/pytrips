@@ -19,3 +19,19 @@ def get_wn_key(k):
     except WordNetError:
         print("no synset found for " + k, file=sys.stderr)
         return None
+
+class Normalize:
+    @staticmethod
+    def ont_name(name):
+        name = name.lower()
+        if name.startswith("ont::"):
+            return name
+        return "ont::{}".format(name)
+
+    @staticmethod
+    def wn_key(name):
+        return name
+
+    @staticmethod
+    def lemma(name):
+        return name.lower()

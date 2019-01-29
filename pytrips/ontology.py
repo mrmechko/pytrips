@@ -36,7 +36,10 @@ class Trips(object):
                     revwords[c].add((word+"."+pos).lower())
 
         for s in ontology:
-            arguments = [TripsRestriction(x["role"], x["restriction"], str(x["optionality"]), self) for x in s.get('arguments', [])]
+            arguments = [TripsRestriction(x["role"],
+                                          x["restriction"],
+                                          str(x["optionality"]), self)
+                         for x in s.get('arguments', [])]
             t = TripsType(
                     s['name'],
                     s.get('parent', "ROOT"),

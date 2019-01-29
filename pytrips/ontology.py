@@ -4,6 +4,7 @@ import sys
 
 from .structures import TripsRestriction, TripsType
 from .helpers import wn, get_wn_key
+from nltk.corpus.reader.wordnet import Synset
 
 
 def _is_query_pair(x):
@@ -15,6 +16,7 @@ def _is_query_pair(x):
 class Trips(object):
     def __init__(self, ontology, lexicon):
         ontology = ontology.values() # used to be a list, now is a dict
+        self.max_wn_depth = 5 # override this for more generous or controlled lookups
         self.__data = {}
         self.__data['root'] = TripsType("root", None, [], [], [], [], self)
         revwords = ddict(set)
@@ -71,8 +73,12 @@ class Trips(object):
                 index.update(words[word])
         return [self[x] for x in index]
 
-    def get_wordnet(self, key):
+    def get_wordnet(self, key, max_depth=-1):
         """Get types provided by wordnet mappings"""
+        if max_depth == -1:
+            max_depth = self.max_wn_depth
+        elif max_depth == 0:
+            return []
         if type(key) is str:
             key = get_wn_key(key)
         if not key:
@@ -82,7 +88,7 @@ class Trips(object):
         else:
             res = set()
             for k in key.hypernyms():
-                res.update(self.get_wordnet(k))
+                res.update(self.get_wordnet(k, max_depth=max_depth-1))
             return list(res)
 
     def lookup(self, word, pos): #TODO what kind of information does this need in general?
@@ -109,6 +115,8 @@ class Trips(object):
             key, pos = key
         if type(key) is TripsType:
             return key
+        if type(key) is Synset:
+            return self.get_wordnet(key)
         elif type(key) is not str:
             return None
         if key is None:

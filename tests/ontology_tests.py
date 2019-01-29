@@ -1,5 +1,5 @@
-from setup import trips
-from data import TestType
+from . import trips
+from .ontology.data import TestType
 from pytrips.helpers import Normalize
 
 def test_name(TestType):

@@ -1,4 +1,4 @@
-from setup import OntTypeData
+from .pretest import OntTypeData
 import pytest
 
 tests = [

@@ -1,12 +1,6 @@
 import pytest
-import pytrips
+from .. import trips
 from pytrips.helpers import Normalize
-
-def test_nmlz_ont():
-    assert Normalize.ont_name("test") == "ont::test"
-    assert Normalize.ont_name("ont::test") == "ont::test"
-
-trips = pytrips.ontology.load()
 
 class OntTypeData:
     def __init__(self,

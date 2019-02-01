@@ -17,5 +17,7 @@ deploy:
   distributions: sdist bdist_wheel
   on:
     branch: release
+    tags: true
+    python: 3.6 # only deploy if we are on 3.6
   password:
     secure: C87nj0PBUaev9SHkvG8mCuv1FHGBI2SoAnsw0Z3W+WBxGBkb/vhNOZhVX/ZatrZfF+rHCnyt3EuTe777fBMoFGlYG3Z/Hu/vNNWvltx2cp+D2uFQoB5IQ4kjxbVCC6ZhCgCkBAvqnYfiWFVqg5bXB4GbAYd/SAudrjbRienfU5Y0wlcQTVWJs5uAsokgvSAFsZTzWO6qQgshwP6hbW4nQyMKLhGH/XqvgN1fTxH5qDbF/t9UK3T9VglUYkTFhIA3dsy2BiyopRr1vSR3uxoVFo7jCgUyXcjSjsw9FX0LrieDPkFPq89wo8XmCAon81cRmnjGzDzl/uptpy6smydVpG+an9UC+afQ36Gdiki3FoHsrCXOhW9sNAnMoOwUE/fE4Y/ksilODR0WyH2ofI7uxRhWyJ5wqZe/X2R5SwdeoC9iEvFgYAdTh7r+biKVjDkoGquFd+sDrzyUAbGRoQRCibnKaxeO82BHzXXP7mQP+wkotEOtCnRrzSykEgsKsxoGIA9Z0p53zQ7o4QynwPPhplV5p0glELhw5WFoF0irRIx3nk0ZBcA5LEla2qPl7JypqMiVxHe7qIvfbhsIukdcEY8SWs+r7KPj63jSHr4egPJcw0QoQq/Fd3Q+qMGMViPBcsU6VhV62xQWG8HrBhaRQmFhbMot9ieBFcrgJieBFYo=

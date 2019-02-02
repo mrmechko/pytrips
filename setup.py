@@ -16,7 +16,7 @@ class EnsureWordnet(install):
 if __name__ == '__main__':
     setup(
         name="pytrips",
-        version="0.0.4",
+        version="0.0.6",
         author="Rik Bose",
         author_email="rbose@cs.rochester.edu",
         description="A simple python package for accessing the trips ontology and lexicon",
@@ -26,7 +26,7 @@ if __name__ == '__main__':
         packages=find_packages(exclude=["test"]),
         classifiers=[
             "Programming Language :: Python :: 3",
-            "License :: OSI Approved :: MIT License",
+            "License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)",
             "Operating System :: OS Independent",
         ],
         install_requires=["nltk", "jsontrips"],

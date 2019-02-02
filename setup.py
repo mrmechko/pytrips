@@ -26,7 +26,7 @@ if __name__ == '__main__':
         packages=find_packages(exclude=["test"]),
         classifiers=[
             "Programming Language :: Python :: 3",
-            "License :: OSI Approved :: MIT License",
+            "License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)",
             "Operating System :: OS Independent",
         ],
         install_requires=["nltk", "jsontrips"],

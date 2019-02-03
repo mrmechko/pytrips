@@ -30,6 +30,6 @@ if __name__ == '__main__':
         ],
         install_requires=["nltk", "jsontrips"],
         cmdclass={
-            "install": _install,
+            "install": install,
         },
     )

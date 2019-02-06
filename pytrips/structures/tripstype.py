@@ -79,7 +79,9 @@ class TripsType(object):
 
     def __eq__(self, other):
         # XXX: does this cause problems with putting things in sets?
-        if type(other) is TripsType:
+        if not other:
+            return False
+        elif type(other) is TripsType:
             return self.name == other.name
         elif type(other) is str:
             return str(self) == other
@@ -133,7 +135,8 @@ class TripsType(object):
         return self.lcs(other)
 
     def subsumes(self, other):
-
+        if not other:
+            return False # Is this a good idea?
         if other == "ont::root":
             return False
         elif other in self.children:

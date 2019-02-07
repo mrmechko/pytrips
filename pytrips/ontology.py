@@ -72,6 +72,17 @@ class Trips(object):
             for pos, words in self.__words.items():
                 index.update(words[word])
         return [self[x] for x in index]
+   
+    def get_part_of_speech(self, pos, lex):
+        """Lookup all possible types or lexical items for the given part of speech"""
+        pos = pos.split("p::")[-1]
+        words = self.__words[pos].keys()
+        if lex:
+            return words
+        res = []
+        for x in words:
+            res += self.get_word(x)
+        return res
 
     def get_wordnet(self, key, max_depth=-1):
         """Get types provided by wordnet mappings"""
@@ -128,6 +139,8 @@ class Trips(object):
             return self.get_wordnet(key)
         elif key.startswith("q::"):
             return self.lookup(key, pos=pos)
+        elif key.startswith("p::"):
+            return self.get_part_of_speech(key, lex=pos)
         else:
             return self.get_trips_type(key)
 

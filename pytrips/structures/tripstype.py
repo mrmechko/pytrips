@@ -56,7 +56,7 @@ class TripsType(object):
     def wordnet_closure(self, max_depth=-1, pos=None):
         if max_depth == -1:
             max_depth = self.__ont.max_wn_depth
-        clsr = set([k for k in self.wordnet_keys if pos and k.pos() == pos])
+        clsr = set([k for k in self.wordnet_keys if k.pos() == pos or not pos])
         for key in self.wordnet_keys:
             ext = list(key.closure(lambda s: [t for t in s.hyponyms() if self in self.__ont[t]], depth=max_depth))
             clsr.update(ext)
@@ -69,8 +69,8 @@ class TripsType(object):
             words.update([w.name() for w in key.lemmas()])
         return words
 
-    def is_a_closure(self, max_depth=3):
-        clsr = self.word_closure(max_depth)
+    def is_a_closure(self, max_depth=3, pos=None):
+        clsr = self.word_closure(max_depth, pos=pos)
         for c in self.children:
             clsr.update(c.is_a_closure(max_depth))
         return clsr

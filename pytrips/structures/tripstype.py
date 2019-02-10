@@ -69,6 +69,12 @@ class TripsType(object):
             words.update([w.name() for w in key.lemmas()])
         return words
 
+    def is_a_closure(self, max_depth=3):
+        clsr = self.word_closure(max_depth)
+        for c in self.children:
+            clsr.update(c.is_a_closure(max_depth))
+        return clsr
+
     @property
     def wordnet(self):
         return self.__wordnet[:]

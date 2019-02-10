@@ -81,8 +81,8 @@ class Trips(object):
             return words
         res = []
         for x in words:
-            res += self.get_word(x)
-        return res
+            res += self.get_word(x, pos=pos)
+        return list(set(res))
 
     def get_wordnet(self, key, max_depth=-1):
         """Get types provided by wordnet mappings"""

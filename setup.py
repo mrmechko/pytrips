@@ -15,7 +15,7 @@ class install(_install):
 if __name__ == '__main__':
     setup(
         name="pytrips",
-        version="0.0.14",
+        version="0.0.15",
         author="Rik Bose",
         author_email="rbose@cs.rochester.edu",
         description="A simple python package for accessing the trips ontology and lexicon",

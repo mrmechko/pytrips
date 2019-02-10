@@ -71,8 +71,8 @@ class Trips(object):
             index = set()
             for pos, words in self.__words.items():
                 index.update(words[word])
-        return [self[x] for x in index]
-   
+        return [self[x] for x in index if self[x]]
+
     def get_part_of_speech(self, pos, lex):
         """Lookup all possible types or lexical items for the given part of speech"""
         pos = pos.split("p::")[-1]

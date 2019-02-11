@@ -1,4 +1,7 @@
 import sys
+import logging
+
+log = logging.getLogger("pytrips.helpers")
 
 try:
     from nltk.corpus import wordnet as wn
@@ -20,7 +23,7 @@ def get_wn_key(k):
     try:
         return wn.lemma_from_key(k).synset()
     except WordNetError:
-        print("no synset found for " + k, file=sys.stderr)
+        log.info("no synset found for " + k)
         return None
 
 class Normalize:

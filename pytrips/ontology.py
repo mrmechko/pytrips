@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger("pytrips")
+
 import jsontrips
 from collections import defaultdict as ddict
 import sys
@@ -151,6 +154,14 @@ class Trips(object):
 
 
 def load():
+    logger.info("Loading ontology")
+
     ont = jsontrips.ontology()
+
+    logger.info("Loaded ontology")
+    logger.info("Loading lexicon")
+    
     lex = jsontrips.lexicon()
+
+    logger.info("Loaded lexicon")
     return Trips(ont, lex)

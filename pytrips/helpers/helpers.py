@@ -41,3 +41,7 @@ class Normalize:
     @staticmethod
     def lemma(name):
         return name.lower()
+
+    @staticmethod
+    def spacy_pos(pos):
+        return pos.lower()[0]

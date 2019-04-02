@@ -32,6 +32,8 @@ class Trips(object):
                 entries = lexicon["entries"][entry["entry"]]
                 pos = entries['pos'].lower()
                 # TODO: incorporate the lexicon
+                if len(entries['senses']) > 1:
+                    logger.info(entries["name"] + " has " + str(len(entries["senses"])) + " senses")
                 for values in entries["senses"]:
                     if "lf_parent" not in values.keys():
                         c = "no_parent"

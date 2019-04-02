@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger("pytrips")
+
 import jsontrips
 from collections import defaultdict as ddict
 import sys
@@ -29,6 +32,8 @@ class Trips(object):
                 entries = lexicon["entries"][entry["entry"]]
                 pos = entries['pos'].lower()
                 # TODO: incorporate the lexicon
+                if len(entries['senses']) > 1:
+                    logger.info(entries["name"] + " has " + str(len(entries["senses"])) + " senses")
                 for values in entries["senses"]:
                     if "lf_parent" not in values.keys():
                         c = "no_parent"
@@ -71,7 +76,18 @@ class Trips(object):
             index = set()
             for pos, words in self.__words.items():
                 index.update(words[word])
-        return [self[x] for x in index]
+        return [self[x] for x in index if self[x]]
+
+    def get_part_of_speech(self, pos, lex):
+        """Lookup all possible types or lexical items for the given part of speech"""
+        pos = pos.split("p::")[-1]
+        words = self.__words[pos].keys()
+        if lex:
+            return words
+        res = []
+        for x in words:
+            res += self.get_word(x, pos=pos)
+        return list(set(res))
 
     def get_wordnet(self, key, max_depth=-1):
         """Get types provided by wordnet mappings"""
@@ -128,6 +144,8 @@ class Trips(object):
             return self.get_wordnet(key)
         elif key.startswith("q::"):
             return self.lookup(key, pos=pos)
+        elif key.startswith("p::"):
+            return self.get_part_of_speech(key, lex=pos)
         else:
             return self.get_trips_type(key)
 
@@ -138,6 +156,14 @@ class Trips(object):
 
 
 def load():
+    logger.info("Loading ontology")
+
     ont = jsontrips.ontology()
+
+    logger.info("Loaded ontology")
+    logger.info("Loading lexicon")
+    
     lex = jsontrips.lexicon()
+
+    logger.info("Loaded lexicon")
     return Trips(ont, lex)

@@ -53,21 +53,27 @@ class TripsType(object):
     def words(self):
         return self.__words[:]
 
-    def wordnet_closure(self, max_depth=-1):
+    def wordnet_closure(self, max_depth=-1, pos=None):
         if max_depth == -1:
             max_depth = self.__ont.max_wn_depth
-        clsr = set(self.wordnet_keys)
+        clsr = set([k for k in self.wordnet_keys if k.pos() == pos or not pos])
         for key in self.wordnet_keys:
             ext = list(key.closure(lambda s: [t for t in s.hyponyms() if self in self.__ont[t]], depth=max_depth))
             clsr.update(ext)
         return clsr
 
-    def word_closure(self, max_depth=3):
-        clsr = self.wordnet_closure(max_depth=max_depth)
+    def word_closure(self, max_depth=3, pos=None):
+        clsr = self.wordnet_closure(max_depth=max_depth, pos=pos)
         words = set()
         for key in clsr:
             words.update([w.name() for w in key.lemmas()])
         return words
+
+    def is_a_closure(self, max_depth=3, pos=None):
+        clsr = self.word_closure(max_depth, pos=pos)
+        for c in self.children:
+            clsr.update(c.is_a_closure(max_depth))
+        return clsr
 
     @property
     def wordnet(self):
@@ -79,7 +85,9 @@ class TripsType(object):
 
     def __eq__(self, other):
         # XXX: does this cause problems with putting things in sets?
-        if type(other) is TripsType:
+        if not other:
+            return False
+        elif type(other) is TripsType:
             return self.name == other.name
         elif type(other) is str:
             return str(self) == other
@@ -133,7 +141,8 @@ class TripsType(object):
         return self.lcs(other)
 
     def subsumes(self, other):
-
+        if not other:
+            return False # Is this a good idea?
         if other == "ont::root":
             return False
         elif other in self.children:

@@ -4,13 +4,17 @@ from setuptools.command.install import install as _install
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-class install(_install):
-    """Post-installation for installation mode."""
-    def run(self):
-        _install.run(self)
-        import nltk
-        nltk.download("wordnet")
-        nltk.download("stopwords")
+extras = {
+    "tools": [
+        'spacy>=2.0.0,<3.0.0',
+        'en_core_web_lg @ https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-2.1.0/en_core_web_lg-2.1.0.tar.gz',
+        ]
+    }
+
+base = [
+        "nltk",
+        "jsontrips",
+    ]
 
 if __name__ == '__main__':
     setup(
@@ -28,8 +32,6 @@ if __name__ == '__main__':
             "License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)",
             "Operating System :: OS Independent",
         ],
-        install_requires=["nltk", "jsontrips"],
-        cmdclass={
-            "install": install,
-        },
+        install_requires=base,
+        extras_require=extras,
     )

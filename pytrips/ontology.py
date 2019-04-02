@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger("pytrips")
+
 import jsontrips
 from collections import defaultdict as ddict
 import sys
@@ -29,6 +32,8 @@ class Trips(object):
                 entries = lexicon["entries"][entry["entry"]]
                 pos = entries['pos'].lower()
                 # TODO: incorporate the lexicon
+                if len(entries['senses']) > 1:
+                    logger.info(entries["name"] + " has " + str(len(entries["senses"])) + " senses")
                 for values in entries["senses"]:
                     if "lf_parent" not in values.keys():
                         c = "no_parent"
@@ -151,6 +156,14 @@ class Trips(object):
 
 
 def load():
+    logger.info("Loading ontology")
+
     ont = jsontrips.ontology()
+
+    logger.info("Loaded ontology")
+    logger.info("Loading lexicon")
+    
     lex = jsontrips.lexicon()
+
+    logger.info("Loaded lexicon")
     return Trips(ont, lex)

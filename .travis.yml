@@ -17,7 +17,7 @@ deploy:
   user: thesoulshell
   distributions: sdist bdist_wheel
   on:
-    branch: master
+    branch: release
     tags: true
     python: 3.6
   password:

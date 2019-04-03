@@ -9,6 +9,8 @@ PyTrips provides a python interface to interacting with the TRIPS ontology and p
 
 ```
 pip install pytrips
+pip install pytrips[tools] # optional
+python -c "import nltk; nltk.download('wordnet')"
 ```
 
 # Basic Usage

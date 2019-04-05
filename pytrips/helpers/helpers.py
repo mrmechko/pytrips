@@ -25,7 +25,7 @@ def get_wn_key(k):
     except WordNetError:
         log.info("no synset found for " + k)
         return None
-
+    
 class Normalize:
     @staticmethod
     def ont_name(name):

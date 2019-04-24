@@ -8,6 +8,21 @@ from pytrips.tools import nlp
 
 ont = load_ontology()
 
+word_cache = {}
+
+def lookup_word(query):
+    word, lemma, pos = query
+    # word lookup:
+    wlookup = ont[("q::"+word, pos)]
+    llookup = ont[("q::"+lemma, pos)]
+
+    res = wlookup["lex"]
+    res += wlookup["wn"]
+    res += llookup["lex"]
+    res += llookup["wn"]
+
+    return set(res)
+
 def tag_word(token):
     pos = Normalize.spacy_pos(token.pos_)
     word = token.text.lower()
@@ -16,16 +31,9 @@ def tag_word(token):
     if pos not in "nvar": # if the pos is not in wordnet
         return set()
 
-    # word lookup:
-    wlookup = ont[("q::"+word, pos)]
-    llookup = ont[("q::"+lemma, pos)]
+    query = (word, lemma, pos)
+    return word_cache[(word, lemma, pos)]
 
-    res = wlookup["lex"] 
-    res += wlookup["wn"]
-    res += llookup["lex"]
-    res += llookup["wn"]
-
-    return set(res)
 
 def tag_sentence(sentence):
     sentence = nlp(sentence)

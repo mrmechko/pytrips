@@ -20,11 +20,11 @@ class Trips(object):
     def __init__(self, ontology, lexicon):
         ontology = ontology.values() # used to be a list, now is a dict
         self.max_wn_depth = 5 # override this for more generous or controlled lookups
-        self.__data = {}
-        self.__data['root'] = TripsType("root", None, [], [], [], [], self)
+        self._data = {}
+        self._data['root'] = TripsType("root", None, [], [], [], [], self)
         revwords = ddict(set)
-        self.__words = ddict(lambda: ddict(set))
-        self.__wordnet_index = ddict(list)
+        self._words = ddict(lambda: ddict(set))
+        self._wordnet_index = ddict(list)
         for word, entry_list in lexicon["words"].items():
             for entry in entry_list:
                 name = entry["name"].lower()
@@ -39,7 +39,7 @@ class Trips(object):
                         c = "no_parent"
                     else:
                         c = values["lf_parent"].lower()
-                    self.__words[pos][word.lower()].add(c)
+                    self._words[pos][word.lower()].add(c)
                     revwords[c].add((word+"."+pos).lower())
 
         for s in ontology:
@@ -56,32 +56,32 @@ class Trips(object):
                     arguments,
                     self
                 )
-            self.__data[t.name] = t
+            self._data[t.name] = t
             for k in s.get('wordnet_sense_keys', []):
                 k = get_wn_key(k)
                 if k:
-                    self.__wordnet_index[k].append(t)
+                    self._wordnet_index[k].append(t)
 
     def get_trips_type(self, name):
         """Get the trips type associated with the name"""
         name = name.split("ont::")[-1].lower()
-        return self.__data.get(name, None)
+        return self._data.get(name, None)
 
     def get_word(self, word, pos=None):
         """Lookup all possible types for a word."""
         word = word.split("w::")[-1].lower()
         if pos:
-            index = self.__words[pos][word]
+            index = self._words[pos][word]
         else:
             index = set()
-            for pos, words in self.__words.items():
+            for pos, words in self._words.items():
                 index.update(words[word])
         return [self[x] for x in index if self[x]]
 
     def get_part_of_speech(self, pos, lex):
         """Lookup all possible types or lexical items for the given part of speech"""
         pos = pos.split("p::")[-1]
-        words = self.__words[pos].keys()
+        words = self._words[pos].keys()
         if lex:
             return words
         res = []
@@ -99,8 +99,8 @@ class Trips(object):
             key = get_wn_key(key)
         if not key:
             return []
-        if key in self.__wordnet_index:
-            return self.__wordnet_index[key][:]
+        if key in self._wordnet_index:
+            return self._wordnet_index[key][:]
         else:
             res = set()
             for k in key.hypernyms():
@@ -152,7 +152,7 @@ class Trips(object):
     def __iter__(self):
         """return an iterator with all the types."""
         # TODO: guarantee order
-        return self.__data.values()
+        return self._data.values()
 
 
 def load():

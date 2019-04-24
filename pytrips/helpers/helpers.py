@@ -10,6 +10,21 @@ try:
 except:
     wn = None
 
+def make_spacy_pos_table():
+    spacy_pos_labels = {
+        "v": ['VBZ', 'TO', 'VBN', 'VBG', 'VBD', 'VB', 'VBP'],
+        "n": ['NN', 'NNP', 'NNPS'],
+        "a": ['JJS', 'JJ', 'JJR'],
+        "r": ['RBS', 'RBR', 'RB']
+        }
+    res = {}
+    for x, y in spacy_pos_labels.items():
+        for yy in y:
+            res[yy] = x
+    return res
+
+spacy_pos_labels = make_spacy_pos_table()
+
 
 def get_wn_key(k):
     if not wn:
@@ -44,4 +59,4 @@ class Normalize:
 
     @staticmethod
     def spacy_pos(pos):
-        return pos.lower()[0]
+        return spacy_pos_labels.get(pos, pos.lower()[0])

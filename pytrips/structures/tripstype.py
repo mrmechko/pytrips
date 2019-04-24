@@ -92,7 +92,7 @@ class TripsType(object):
         elif type(other) is str:
             return str(self) == other
         else:
-            raise NotImplemented
+            return False
 
     def __lt__(self, other):
         if type(other) is str:

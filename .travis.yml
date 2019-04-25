@@ -1,7 +1,5 @@
 language: python
 python:
-- '3.4'
-- '3.5'
 - '3.6'
 install:
 - pip install -r requirements.txt
@@ -16,6 +14,7 @@ deploy:
   provider: pypi
   user: thesoulshell
   distributions: sdist bdist_wheel
+  skip_cleanup: true
   on:
     branch: release
     python: 3.6

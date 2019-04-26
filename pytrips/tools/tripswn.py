@@ -10,7 +10,7 @@ def load(wn_weight=1.0, trips_weight=1.0):
 
 class TripsWN:
     # convenience object
-    def __init__(self, ontology, wn_weight=2.0, trips_weight=1.0):
+    def __init__(self, ontology, wn_weight=5.0, trips_weight=1.0):
         self.ontology = ontology
         self.wn_weight = wn_weight
         self.trips_weight = trips_weight
@@ -123,6 +123,7 @@ class TripsWN:
 
         def score(path1, path2):
             lcs = self.get_lcs_path(path1, path2)
+            print(path1[0], len(path1), ">", lcs[0], "<", len(path2), path2[0])
             lcs_weight = self.path_weight(lcs)
             try:
                 return 2*lcs_weight/(self.path_weight(path1) + self.path_weight(path2))

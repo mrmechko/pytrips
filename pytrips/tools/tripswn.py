@@ -65,10 +65,10 @@ class TripsWN:
             return []
         if key in self._wordnet_index:
             if not path:
-                return self._wordnet_index[key][:]
+                res = self._wordnet_index[key][:]
             return [[key]+fill(t) for t in self._wordnet_index[key][:]]
         else:
-            paths = [list(reversed(p[max_depth:])) for p in key.hypernym_paths()]
+            paths = [list(reversed(p[:max_depth])) for p in key.hypernym_paths()]
             results = []
             for p in paths:
                 for i in range(len(p)):
@@ -90,12 +90,47 @@ class TripsWN:
             path = path[:ind]
         return sum([self.node_weight(p) for p in path])
 
-    def get_lcs(self, node1, node2):
-        if node1 == node2:
-            return node1
-        if type(node1) is TripsType and type(node2) is TripsType:
-            return node1.lcs(node2)
-        comb = zip(reversed(path1), reversed(path2))
+    def get_lcs_path(self, path1, path2):
+        x = [s for s in zip(reversed(path1), reversed(path2))]
+        curr = []
+        while x:
+            a, b = x.pop()
+            if type(a) == type(b) and a == b:
+                    curr.append(a)
+            else:
+                return curr
+        return curr
+
+    def path_to_root(self, item):
+        if type(item) is str:
+            if item.startswith("wn::"):
+                return self.get_wordnet(item[4:], path=True, fill=True)
+            else:
+                return [self.ontology.get[item].path_to_root()]
+        elif type(item) is Synset:
+            return self.get_wordnet(item, path=True, fill=True)
+        elif type(item) is TripsType:
+            return [item.path_to_root()]
+        else:
+            return []
+
+    def cross_wup(self, sense1, sense2, shortest_path_to_trips=True):
+        if type(sense1) not in [TripsType, Synset]:
+            print(sense1, "is not a tripstype or synset")
+            return None
+        if type(sense2) not in [TripsType, Synset]:
+            print(sense2, "is not a tripstype or synset")
+            return None
+        ptr1 = self.path_to_root(sense1)
+        ptr2 = self.path_to_root(sense2)
+
+        def score(path1, path2):
+            lcs = self.get_lcs_path(path1, path2)
+            lcs_weight = self.path_weight(lcs)
+            return 2*lcs_weight/(self.path_weight(path1) + self.path_weight(path2))
+        print(sense1, len(ptr1))
+        print(sense2, len(ptr2))
+        return min(ptr1, key=lambda x: min(ptr2, key=lambda y: score(x, y)))
 
     def node_weight(self, node):
         if type(node) is Synset:
@@ -106,4 +141,3 @@ class TripsWN:
             # maybe I should have the type detector here?
             return self.wn_weight
         return 0
-        

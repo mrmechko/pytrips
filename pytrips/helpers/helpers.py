@@ -28,19 +28,23 @@ spacy_pos_labels = make_spacy_pos_table()
 
 def get_wn_key(k):
     if not wn:
+        log.info("wn not found when trying to lookup " + k)
         return None
     if type(k) is Synset:
         return k
     if k.startswith("wn::"):
         k = k[4:]
-    while len(k.split(":")) < 5:
+    while k.count(":") < 4:
         k += ":"
     try:
-        return wn.lemma_from_key(k).synset()
+        res = wn.lemma_from_key(k).synset()
+        if not res:
+            log.info("synset is None for " + k)
+        return res
     except WordNetError:
         log.info("no synset found for " + k)
         return None
-    
+
 class Normalize:
     @staticmethod
     def ont_name(name):

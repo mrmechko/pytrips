@@ -90,15 +90,10 @@ class TripsWN:
         return sum([self.node_weight(p) for p in path])
 
     def get_lcs_path(self, path1, path2):
-        x = [s for s in zip(reversed(path1), reversed(path2))]
-        curr = []
-        while x:
-            a, b = x.pop()
-            if type(a) == type(b) and a == b:
-                    curr.append(a)
-            else:
-                return curr
-        return curr
+        return [s
+                for s, t in zip(reversed(path1), reversed(path2))
+                if type(s) == type(t) and s == t
+                ]
 
     def path_to_root(self, item):
         if type(item) is str:
@@ -118,12 +113,12 @@ class TripsWN:
             return 0
         if type(sense2) not in [TripsType, Synset]:
             return 0
+
         ptr1 = self.path_to_root(sense1)
         ptr2 = self.path_to_root(sense2)
 
         def score(path1, path2):
             lcs = self.get_lcs_path(path1, path2)
-            print(path1[0], len(path1), ">", lcs[0], "<", len(path2), path2[0])
             lcs_weight = self.path_weight(lcs)
             try:
                 return 2*lcs_weight/(self.path_weight(path1) + self.path_weight(path2))

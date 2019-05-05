@@ -167,3 +167,11 @@ def load():
 
     logger.info("Loaded lexicon")
     return Trips(ont, lex)
+
+__ontology__ = None
+
+def get_ontology():
+    global __ontology__
+    if not __ontology__:
+        __ontology__ = load()
+    return __ontology__

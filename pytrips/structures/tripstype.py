@@ -127,6 +127,7 @@ class TripsType(object):
         if type(other) is str:
             other = self.__ont[other]
         if type(other) is not TripsType:
+            print(type(other))
             raise NotImplemented
         t = reversed(self.path_to_root())
         s = reversed(other.path_to_root())

@@ -8,21 +8,33 @@ import sys
 from .structures import TripsRestriction, TripsType
 from .helpers import wn, get_wn_key
 from nltk.corpus.reader.wordnet import Synset
-
+import string as _string
+from graphviz import Digraph
 
 class NodeGraph:
     def __init__(self):
         self.nodes = {}
         self.edges = set()
 
+    def get_nth_label(self, n):
+        if n < 26:
+            return _string.ascii_uppercase[n]
+        return self.get_nth_label(n // 26) + self.get_nth_label(n % 26)
+
     def escape_label(self, s):
-        return s
+        if type(s) is str:
+            return s
+        if type(s) is Synset:
+            return s.lemmas()[0].key().replace("%", ".")
+        if type(s) is TripsType:
+            return s.name
+        return str(s)
 
     def node(self, name):
         name = self.escape_label(name)
         if name in self.nodes:
-            continue
-        label = string.ascii_uppercase[len(self.nodes)]
+            return
+        label = self.get_nth_label(len(self.nodes))
         self.nodes[name] = label
 
     def edge(self, source, target, label=""):
@@ -121,37 +133,54 @@ class Trips(object):
             res += self.get_word(x, pos=pos)
         return list(set(res))
 
-    def get_wordnet(self, key, max_depth=-1, graph=None):
+    def get_word_graph(self, word, pos=None):
+        graph = NodeGraph()
+        senses = wn.synsets(word, pos=pos)
+        if pos:
+            word = word + "." + pos
+        graph.node(word)
+        for s in senses:
+            n, graph = self.get_wordnet(s, graph=graph, parent=word)
+        return graph
+
+    def get_wordnet(self, key, max_depth=-1, graph=None, parent=None):
         """Get types provided by wordnet mappings"""
+        def _return(val):
+            if graph:
+                return (val, graph)
+            return val
+
         if graph == True:
             graph = NodeGraph()
+
         if max_depth == -1:
             max_depth = self.max_wn_depth
         elif max_depth == 0:
-            return []
+            return _return([])
+
         if type(key) is str:
             key = get_wn_key(key)
         if not key:
-            if graph:
-                return graph.source
-            return []
+            return _return([])
+
+        graph.node(key)
+        if parent:
+            graph.edge(parent, key)
+        res = []
         if key in self._wordnet_index:
             res = self._wordnet_index[key][:]
-            for r in res:
-                graph.node(r)
-                graph.edge(key, r)
+            if graph:
+                for r in res:
+                    graph.node(r)
+                    graph.edge(key, r)
         else:
             res = set()
             for k in key.hypernyms():
-                n = self.get_wordnet(k, max_depth=max_depth-1, graph=graph)
+                n = self.get_wordnet(k, max_depth=max_depth-1, graph=graph, parent=key)
                 if graph:
-                    for x in n:
-                        graph.node(x)
-                        graph.edge(key, x)
+                    n, graph = n
                 res.update(n)
-            if graph:
-                return graph.source
-            return list(res)
+        return _return(res)
 
     def lookup(self, word, pos): #TODO what kind of information does this need in general?
         word = word.split("q::")[-1]

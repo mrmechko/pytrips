@@ -14,6 +14,7 @@ extras = {
 base = [
         "nltk",
         "jsontrips",
+        "graphviz"
     ]
 
 if __name__ == '__main__':

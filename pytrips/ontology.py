@@ -10,6 +10,38 @@ from .helpers import wn, get_wn_key
 from nltk.corpus.reader.wordnet import Synset
 
 
+class NodeGraph:
+    def __init__(self):
+        self.nodes = {}
+        self.edges = set()
+
+    def escape_label(self, s):
+        return s
+
+    def node(self, name):
+        name = self.escape_label(name)
+        if name in self.nodes:
+            continue
+        label = string.ascii_uppercase[len(self.nodes)]
+        self.nodes[name] = label
+
+    def edge(self, source, target, label=""):
+        self.edges.add((self.escape_label(source), 
+                    self.escape_label(target), 
+                    self.escape_label(label)))
+
+    def source(self):
+        graph = Digraph()
+        for l, t in self.nodes.items():
+            graph.node(l, t)
+        for s, t, l in self.edges:
+            s, t = self.nodes[s], self.nodes[t]
+            if l:
+                graph.edge(s, t, l)
+            else:
+                graph.edge(s, t)
+        return graph.source
+
 def _is_query_pair(x):
     if type(x) is tuple and len(x) == 2:
         return (type(x[0]) in set([str, TripsType])) and (type(x[1] == str))
@@ -89,8 +121,10 @@ class Trips(object):
             res += self.get_word(x, pos=pos)
         return list(set(res))
 
-    def get_wordnet(self, key, max_depth=-1):
+    def get_wordnet(self, key, max_depth=-1, graph=None):
         """Get types provided by wordnet mappings"""
+        if graph == True:
+            graph = NodeGraph()
         if max_depth == -1:
             max_depth = self.max_wn_depth
         elif max_depth == 0:
@@ -98,13 +132,25 @@ class Trips(object):
         if type(key) is str:
             key = get_wn_key(key)
         if not key:
+            if graph:
+                return graph.source
             return []
         if key in self._wordnet_index:
-            return self._wordnet_index[key][:]
+            res = self._wordnet_index[key][:]
+            for r in res:
+                graph.node(r)
+                graph.edge(key, r)
         else:
             res = set()
             for k in key.hypernyms():
-                res.update(self.get_wordnet(k, max_depth=max_depth-1))
+                n = self.get_wordnet(k, max_depth=max_depth-1, graph=graph)
+                if graph:
+                    for x in n:
+                        graph.node(x)
+                        graph.edge(key, x)
+                res.update(n)
+            if graph:
+                return graph.source
             return list(res)
 
     def lookup(self, word, pos): #TODO what kind of information does this need in general?

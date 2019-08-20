@@ -1,5 +1,5 @@
 from ..helpers import get_wn_key
-
+import json
 
 class TripsType(object):
     """
@@ -13,7 +13,7 @@ class TripsType(object):
     # WARNING: arguments are currently not loaded.  There is a raw dict there
     """
 
-    def __init__(self, name, parent, children, words, wordnet, arguments, ont):
+    def __init__(self, name, parent, children, words, wordnet, arguments, definitions, ont):
         self.__name = name.lower()
         if parent:
             self.__parent = parent.lower()
@@ -24,6 +24,7 @@ class TripsType(object):
         self.__words = [w.lower() for w in words]
         self.__wordnet = [w.lower() for w in wordnet]
         self.__wordnet_keys = [get_wn_key(s) for s in self.__wordnet if get_wn_key(s)]
+        self.__definitions = json.loads(json.dumps(definitions))
         self.__ont = ont
         # TODO: set numerical id
 
@@ -48,6 +49,10 @@ class TripsType(object):
     @property
     def arguments(self):
         return self.__arguments[:]
+
+    @property
+    def definitions(self):
+        return self.__definitions[:]
 
     @property
     def words(self):

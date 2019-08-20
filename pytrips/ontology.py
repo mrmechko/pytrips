@@ -3,6 +3,7 @@ logger = logging.getLogger("pytrips")
 
 import jsontrips
 from collections import defaultdict as ddict
+import json
 import sys
 
 from .structures import TripsRestriction, TripsType
@@ -21,10 +22,11 @@ class Trips(object):
         ontology = ontology.values() # used to be a list, now is a dict
         self.max_wn_depth = 5 # override this for more generous or controlled lookups
         self._data = {}
-        self._data['root'] = TripsType("root", None, [], [], [], [], self)
+        self._data['root'] = TripsType("root", None, [], [], [], [], [], self)
         revwords = ddict(set)
         self._words = ddict(lambda: ddict(set))
         self._wordnet_index = ddict(list)
+        self.__definitions = ddict(list)
         for word, entry_list in lexicon["words"].items():
             for entry in entry_list:
                 name = entry["name"].lower()
@@ -54,6 +56,7 @@ class Trips(object):
                     list(revwords[s['name'].lower()]),
                     s.get('wordnet_sense_keys', []),
                     arguments,
+                    s.get('definitions', []),
                     self
                 )
             self._data[t.name] = t
@@ -61,6 +64,9 @@ class Trips(object):
                 k = get_wn_key(k)
                 if k:
                     self._wordnet_index[k].append(t)
+
+            if t.definitions:
+                self.__definitions[json.dumps(t.definitions)].append(t.name)
 
     def get_trips_type(self, name):
         """Get the trips type associated with the name"""
@@ -119,6 +125,11 @@ class Trips(object):
                 wnlook.update(self.get_wordnet(k))
         return {"lex" : w_look, "wn": list(wnlook)}
 
+    def get_definition(self, name):
+        """Get types that contain the given name in their definitions
+        """
+        name = name.split("d::")[-1].split("ont::")[-1].lower()
+        return list(set([self.__definitions[df] for df in self.__definitions.keys() if ""+name+"" in df]))
 
     def __getitem__(self, key):
         """if the input is "w::x" lookup x as a word
@@ -146,6 +157,8 @@ class Trips(object):
             return self.lookup(key, pos=pos)
         elif key.startswith("p::"):
             return self.get_part_of_speech(key, lex=pos)
+        elif key.startswith("d::") and self.get_trips_type(key.split("d::")[-1]):
+            return self.get_definition(key)
         else:
             return self.get_trips_type(key)
 

@@ -128,8 +128,8 @@ class Trips(object):
     def get_definition(self, name):
         """Get types that contain the given name in their definitions
         """
-        name = name.split("d::")[-1].split("ont::")[-1].lower()
-        return list(set([self.__definitions[df] for df in self.__definitions.keys() if ""+name+"" in df]))
+        name = name.split("d::")[-1].split("ont::")[-1].upper() #definitions are in uppercase, names are in lower case.
+        return list(set(["ont::"+df for lst in self.__definitions.keys() for df in self.__definitions[lst] if ""+name+"" in lst]))
 
     def __getitem__(self, key):
         """if the input is "w::x" lookup x as a word

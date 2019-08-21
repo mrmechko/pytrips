@@ -163,9 +163,10 @@ class Trips(object):
         if not key:
             return _return([])
 
-        graph.node(key)
-        if parent:
-            graph.edge(parent, key)
+        if graph:
+            graph.node(key)
+            if parent:
+                graph.edge(parent, key)
         res = []
         if key in self._wordnet_index:
             res = self._wordnet_index[key][:]

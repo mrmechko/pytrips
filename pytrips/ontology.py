@@ -244,7 +244,9 @@ class Trips(object):
         return self._data.values()
 
 
-def load():
+def load(log=False):
+    if not log:
+        logging.disable(logging.CRITICAL)
     logger.info("Loading ontology")
 
     ont = jsontrips.ontology()
@@ -259,7 +261,7 @@ def load():
 
 __ontology__ = None
 
-def get_ontology():
+def get_ontology(log=False):
     global __ontology__
     if not __ontology__:
         __ontology__ = load()

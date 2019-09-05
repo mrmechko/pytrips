@@ -6,7 +6,7 @@ from collections import defaultdict as ddict
 import json
 import sys
 
-from .structures import TripsRestriction, TripsType
+from .structures import TripsRestriction, TripsType, TripsSem
 from .helpers import wn, get_wn_key, all_hypernyms
 from nltk.corpus.reader.wordnet import Synset
 import string as _string
@@ -66,7 +66,7 @@ class Trips(object):
         ontology = ontology.values() # used to be a list, now is a dict
         self.max_wn_depth = 5 # override this for more generous or controlled lookups
         self._data = {}
-        self._data['root'] = TripsType("root", None, [], [], [], [], [], self)
+        self._data['root'] = TripsType("root", None, [], [], [], [], TripsSem(type_="root", ont=self), [], self)
         revwords = ddict(set)
         self._words = ddict(lambda: ddict(set))
         self._wordnet_index = ddict(list)
@@ -93,6 +93,9 @@ class Trips(object):
                                           x["restriction"],
                                           str(x["optionality"]), self)
                          for x in s.get('arguments', [])]
+            sem_ = s.get("sem", {})
+            _d = lambda y: {a.lower(): b for a, b in sem_.get(y, [])}
+            sem = TripsSem(_d("features"), _d("default"), sem_.get("type", "").lower(), self)
             t = TripsType(
                     s['name'],
                     s.get('parent', "ROOT"),
@@ -100,6 +103,7 @@ class Trips(object):
                     list(revwords[s['name'].lower()]),
                     s.get('wordnet_sense_keys', []),
                     arguments,
+                    sem,
                     s.get('definitions', []),
                     self
                 )

@@ -13,7 +13,7 @@ class TripsType(object):
     # WARNING: arguments are currently not loaded.  There is a raw dict there
     """
 
-    def __init__(self, name, parent, children, words, wordnet, arguments, definitions, ont):
+    def __init__(self, name, parent, children, words, wordnet, arguments, sem, definitions, ont):
         self.__name = name.lower()
         if parent:
             self.__parent = parent.lower()
@@ -21,6 +21,7 @@ class TripsType(object):
             self.__parent = None
         self.__children = children
         self.__arguments = arguments
+        self.__sem = sem
         self.__words = [w.lower() for w in words]
         self.__wordnet = [w.lower() for w in wordnet]
         self.__wordnet_keys = [get_wn_key(s) for s in self.__wordnet if get_wn_key(s)]
@@ -49,6 +50,10 @@ class TripsType(object):
     @property
     def arguments(self):
         return self.__arguments[:]
+
+    @property
+    def sem(self):
+        return self.__sem
 
     @property
     def definitions(self):
@@ -145,12 +150,66 @@ class TripsType(object):
     def __xor__(self, other):
         return self.lcs(other)
 
-    def subsumes(self, other):
+    def subsumes(self, other, max_depth=-1, significant=False):
+        """messing with a method this fundamental is dangerous.  
+           Guarantee - node never changes, we only abstract out other"""
+        node = self
+        if significant:
+            node = self.significant()
+            other = other.significant()
+            if node == other:
+                return False # they are in the same class, so no subsumption
         if not other:
             return False # Is this a good idea?
         if other == "ont::root":
             return False
-        elif other in self.children:
+        elif significant and other in node.significant_children():
             return True
+        elif not significant and other in node.children:
+            return True
+        elif max_depth == 0:
+            return False
+        elif significant:
+            return node.subsumes(other.significant_parent(), max_depth=max_depth-1)
         else:
-            return self.subsumes(other.parent)
+            return node.subsumes(other.parent, max_depth=max_depth-1)
+
+    def differs_semantically_from(self, other):
+        if self.sem.differs_from(other.sem):
+            return True
+        argset = set([str(x) for x in self.arguments])
+        argset2 = set([str(x) for x in other.arguments])
+        return argset != argset2
+
+    def significant_parent(self):
+        """returns next significant ancestor"""
+        if self == "ont::root":
+            return self
+        return self.parent.significant()
+
+    def significant(self):
+        """returns next significant node on path to root, including self"""
+        if self == "ont::root":
+            return self
+        if self.differs_semantically_from(self.parent):
+            return self
+        return self.parent.significant()
+
+    def significant_ancestors(self):
+        """returns all significant ancestors"""
+        if self == "ont::root":
+            return []
+        if self.differs_semantically_from(self.parent):
+            return [self] + self.parent.significant_ancestors()
+        return self.parent.significant_ancestors()
+
+    def significant_children(self):
+        """return significant immediate children"""
+        return [c for c in self.children if self.differs_semantically_from(c)]
+
+    def significant_descendants(self):
+        """return all significant descendants"""
+        if not self.children:
+            return []
+        return sum([c.significant_descendants() for c in self.children], self.significant_children())
+

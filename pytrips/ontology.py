@@ -7,7 +7,7 @@ import json
 import sys
 
 from .structures import TripsRestriction, TripsType
-from .helpers import wn, get_wn_key
+from .helpers import wn, get_wn_key, all_hypernyms
 from nltk.corpus.reader.wordnet import Synset
 import string as _string
 from graphviz import Digraph
@@ -182,7 +182,7 @@ class Trips(object):
                     graph.edge(key, r)
         else:
             res = set()
-            for k in key.hypernyms():
+            for k in all_hypernyms(key):
                 n = self.get_wordnet(k, max_depth=max_depth-1, graph=graph, parent=key)
                 if graph:
                     n, graph = n
@@ -264,5 +264,5 @@ __ontology__ = None
 def get_ontology(log=False):
     global __ontology__
     if not __ontology__:
-        __ontology__ = load()
+        __ontology__ = load(log=log)
     return __ontology__

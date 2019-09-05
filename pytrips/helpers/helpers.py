@@ -64,3 +64,10 @@ class Normalize:
     @staticmethod
     def spacy_pos(pos):
         return spacy_pos_labels.get(pos, pos.lower()[0])
+
+def all_hypernyms(synset):
+    """Since wordnet doesn't list all hypernyms as hypernyms, here is a cheat to get hypernyms."""
+    h = synset.hypernyms()
+    if synset.pos() == wn.NOUN:
+        h += synset.instance_hypernyms()
+    return h

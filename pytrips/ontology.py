@@ -26,7 +26,7 @@ class NodeGraph:
         if type(s) is str:
             return s
         if type(s) is Synset:
-            return s.lemmas()[0].key().replace("%", ".")
+            return s.lemmas()[0].key()#.replace("%", ".")
         if type(s) is TripsType:
             return s.name
         return str(s)
@@ -54,6 +54,20 @@ class NodeGraph:
             else:
                 graph.edge(s, t)
         return graph.source
+
+    def json(self):
+        elements = []
+        for label, name in self.nodes.items():
+            elements.append({"data": {"id": name, "label": label}})
+        for source, target, label in self.edges:
+            source = self.nodes[source]
+            target = self.nodes[target]
+            edge = {"data": {"source": source, "target": target}}
+            if label:
+                edge["data"]["label"] = label
+            elements.append(edge)
+        return elements
+
 
 def _is_query_pair(x):
     if type(x) is tuple and len(x) == 2:
@@ -248,7 +262,7 @@ class Trips(object):
         return self._data.values()
 
 
-def load(log=False):
+def load(skip_lexicon=False, log=False):
     if not log:
         logging.disable(logging.CRITICAL)
     logger.info("Loading ontology")
@@ -258,15 +272,18 @@ def load(log=False):
     logger.info("Loaded ontology")
     logger.info("Loading lexicon")
     
-    lex = jsontrips.lexicon()
+    if skip_lexicon:
+        lex = {}
+    else:
+        lex = jsontrips.lexicon()
 
     logger.info("Loaded lexicon")
     return Trips(ont, lex)
 
 __ontology__ = None
 
-def get_ontology(log=False):
+def get_ontology(skip_lexicon=False, log=False):
     global __ontology__
     if not __ontology__:
-        __ontology__ = load(log=log)
+        __ontology__ = load(skip_lexicon=skip_lexicon, log=log)
     return __ontology__

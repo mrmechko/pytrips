@@ -22,20 +22,28 @@ class NodeGraph:
             return _string.ascii_uppercase[n]
         return self.get_nth_label(n // 26) + self.get_nth_label(n % 26)
 
+    def get_label(self, name):
+        res = get_wn_key(name.split("::")[-1])
+        if res:
+            return res.name()
+        return name.lower()
+
     def escape_label(self, s):
+        if not s:
+            return ""
         if type(s) is str:
-            return s
+            return "w::"+s
         if type(s) is Synset:
-            return s.lemmas()[0].key()#.replace("%", ".")
+            return "wn::"+s.lemmas()[0].key()#.replace("%", ".")
         if type(s) is TripsType:
-            return s.name
-        return str(s)
+            return "ont::"+s.name
+        return "any::"+str(s)
 
     def node(self, name):
         name = self.escape_label(name)
         if name in self.nodes:
             return
-        label = self.get_nth_label(len(self.nodes))
+        label = self.get_label(name)
         self.nodes[name] = label
 
     def edge(self, source, target, label=""):
@@ -85,22 +93,23 @@ class Trips(object):
         self._words = ddict(lambda: ddict(set))
         self._wordnet_index = ddict(list)
         self.__definitions = ddict(list)
-        for word, entry_list in lexicon["words"].items():
-            for entry in entry_list:
-                name = entry["name"].lower()
-                #cat = entry["cat"].lower()
-                entries = lexicon["entries"][entry["entry"]]
-                pos = entries['pos'].lower()
-                # TODO: incorporate the lexicon
-                if len(entries['senses']) > 1:
-                    logger.info(entries["name"] + " has " + str(len(entries["senses"])) + " senses")
-                for values in entries["senses"]:
-                    if "lf_parent" not in values.keys():
-                        c = "no_parent"
-                    else:
-                        c = values["lf_parent"].lower()
-                    self._words[pos][word.lower()].add(c)
-                    revwords[c].add((word+"."+pos).lower())
+        if lexicon:
+            for word, entry_list in lexicon["words"].items():
+                for entry in entry_list:
+                    name = entry["name"].lower()
+                    #cat = entry["cat"].lower()
+                    entries = lexicon["entries"][entry["entry"]]
+                    pos = entries['pos'].lower()
+                    # TODO: incorporate the lexicon
+                    if len(entries['senses']) > 1:
+                        logger.info(entries["name"] + " has " + str(len(entries["senses"])) + " senses")
+                    for values in entries["senses"]:
+                        if "lf_parent" not in values.keys():
+                            c = "no_parent"
+                        else:
+                            c = values["lf_parent"].lower()
+                        self._words[pos][word.lower()].add(c)
+                        revwords[c].add((word+"."+pos).lower())
 
         for s in ontology:
             arguments = [TripsRestriction(x["role"],

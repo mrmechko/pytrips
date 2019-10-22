@@ -1,4 +1,4 @@
-from ..helpers import get_wn_key
+from ..helpers import get_wn_key, all_hyponyms
 import json
 
 class TripsType(object):
@@ -24,7 +24,7 @@ class TripsType(object):
         self.__sem = sem
         self.__words = [w.lower() for w in words]
         self.__wordnet = [w.lower() for w in wordnet]
-        self.__wordnet_keys = [get_wn_key(s) for s in self.__wordnet if get_wn_key(s)]
+        self.__wordnet_keys = None
         self.__definitions = json.loads(json.dumps(definitions))
         self.__ont = ont
         # TODO: set numerical id
@@ -68,7 +68,7 @@ class TripsType(object):
             max_depth = self.__ont.max_wn_depth
         clsr = set([k for k in self.wordnet_keys if k.pos() == pos or not pos])
         for key in self.wordnet_keys:
-            ext = list(key.closure(lambda s: [t for t in s.hyponyms() if self in self.__ont[t]], depth=max_depth))
+            ext = list(key.closure(lambda s: [t for t in all_hyponyms(s) if self in self.__ont[t]], depth=max_depth))
             clsr.update(ext)
         return clsr
 
@@ -91,6 +91,8 @@ class TripsType(object):
 
     @property
     def wordnet_keys(self):
+        if self.__wordnet_keys is None:
+            self.__wordnet_keys = [get_wn_key(s) for s in self.__wordnet if get_wn_key(s)]
         return self.__wordnet_keys[:]
 
     def __eq__(self, other):

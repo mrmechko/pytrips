@@ -1,0 +1,8 @@
+name
+parent
+children
+words << needs processing
+wordnet
+arguments
+sem
+definitions

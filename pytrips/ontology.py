@@ -7,7 +7,7 @@ import json
 import sys
 
 from .structures import TripsRestriction, TripsType, TripsSem
-from .helpers import wn, get_wn_key, all_hypernyms
+from .helpers import wn, get_wn_key, ss_to_sk, all_hypernyms
 from nltk.corpus.reader.wordnet import Synset
 import string as _string
 from graphviz import Digraph
@@ -82,62 +82,70 @@ def _is_query_pair(x):
         return (type(x[0]) in set([str, TripsType])) and (type(x[1] == str))
     return False
 
+def load_json(ontology, lexicon):
+    self = Trips()
+    ontology = ontology.values() # used to be a list, now is a dict
+    self.max_wn_depth = 5 # override this for more generous or controlled lookups
+    self._data = {}
+    self._data['root'] = TripsType("root", None, [], [], [], [], TripsSem(type_="root", ont=self), [], self)
+    revwords = ddict(set)
+    self._words = ddict(lambda: ddict(set))
+    self._wordnet_index = ddict(list)
+    self.__definitions = ddict(list)
+    if lexicon:
+        for word, entry_list in lexicon["words"].items():
+            for entry in entry_list:
+                # Gather name, entries, pos
+                name = entry["name"].lower()
+                #cat = entry["cat"].lower()
+                entries = lexicon["entries"][entry["entry"]]
+                pos = entries['pos'].lower()
+                # TODO: incorporate the lexicon
+                if len(entries['senses']) > 1:
+                    logger.info(entries["name"] + " has " + str(len(entries["senses"])) + " senses")
+                for values in entries["senses"]:
+                    if "lf_parent" not in values.keys():
+                        c = "no_parent"
+                    else:
+                        c = values["lf_parent"].lower()
+                    self._words[pos][word.lower()].add(c)
+                    revwords[c].add((word+"."+pos).lower())
+
+    for s in ontology:
+        arguments = [TripsRestriction(x["role"],
+                                      x["restriction"],
+                                      str(x["optionality"]), self)
+                     for x in s.get('arguments', [])]
+        sem_ = s.get("sem", {})
+        _d = lambda y: {a.lower(): b for a, b in sem_.get(y, [])}
+        sem = TripsSem(_d("features"), _d("default"), sem_.get("type", "").lower(), self)
+        t = TripsType(
+                s['name'],
+                s.get('parent', "ROOT"),
+                s.get('children', []),
+                list(revwords[s['name'].lower()]),
+                s.get('wordnet_sense_keys', []),
+                arguments,
+                sem,
+                s.get('definitions', []),
+                self
+            )
+        self._data[t.name] = t
+        for k in s.get('wordnet_sense_keys', []):
+            #k = get_wn_key(k) # won't need to do this if I normalize sense_keys to start with
+            if k:
+                self._wordnet_index[k].append(t)
+
+        if t.definitions:
+            self.__definitions[json.dumps(t.definitions)].append(t.name)
+    return self
 
 class Trips(object):
-    def __init__(self, ontology, lexicon):
-        ontology = ontology.values() # used to be a list, now is a dict
-        self.max_wn_depth = 5 # override this for more generous or controlled lookups
-        self._data = {}
-        self._data['root'] = TripsType("root", None, [], [], [], [], TripsSem(type_="root", ont=self), [], self)
-        revwords = ddict(set)
-        self._words = ddict(lambda: ddict(set))
-        self._wordnet_index = ddict(list)
-        self.__definitions = ddict(list)
-        if lexicon:
-            for word, entry_list in lexicon["words"].items():
-                for entry in entry_list:
-                    name = entry["name"].lower()
-                    #cat = entry["cat"].lower()
-                    entries = lexicon["entries"][entry["entry"]]
-                    pos = entries['pos'].lower()
-                    # TODO: incorporate the lexicon
-                    if len(entries['senses']) > 1:
-                        logger.info(entries["name"] + " has " + str(len(entries["senses"])) + " senses")
-                    for values in entries["senses"]:
-                        if "lf_parent" not in values.keys():
-                            c = "no_parent"
-                        else:
-                            c = values["lf_parent"].lower()
-                        self._words[pos][word.lower()].add(c)
-                        revwords[c].add((word+"."+pos).lower())
-
-        for s in ontology:
-            arguments = [TripsRestriction(x["role"],
-                                          x["restriction"],
-                                          str(x["optionality"]), self)
-                         for x in s.get('arguments', [])]
-            sem_ = s.get("sem", {})
-            _d = lambda y: {a.lower(): b for a, b in sem_.get(y, [])}
-            sem = TripsSem(_d("features"), _d("default"), sem_.get("type", "").lower(), self)
-            t = TripsType(
-                    s['name'],
-                    s.get('parent', "ROOT"),
-                    s.get('children', []),
-                    list(revwords[s['name'].lower()]),
-                    s.get('wordnet_sense_keys', []),
-                    arguments,
-                    sem,
-                    s.get('definitions', []),
-                    self
-                )
-            self._data[t.name] = t
-            for k in s.get('wordnet_sense_keys', []):
-                k = get_wn_key(k)
-                if k:
-                    self._wordnet_index[k].append(t)
-
-            if t.definitions:
-                self.__definitions[json.dumps(t.definitions)].append(t.name)
+    def __init__(self):
+        self._data=None
+        self._words=None
+        self._wordnet_index=None
+        self.__definitions=None
 
     def get_trips_type(self, name):
         """Get the trips type associated with the name"""
@@ -201,8 +209,8 @@ class Trips(object):
             if parent:
                 graph.edge(parent, key)
         res = []
-        if key in self._wordnet_index:
-            res = self._wordnet_index[key][:]
+        if ss_to_sk(key) in self._wordnet_index:
+            res = self._wordnet_index[ss_to_sk(key)][:]
             if graph:
                 for r in res:
                     graph.node(r)
@@ -287,7 +295,7 @@ def load(skip_lexicon=False, log=False):
         lex = jsontrips.lexicon()
 
     logger.info("Loaded lexicon")
-    return Trips(ont, lex)
+    return load_json(ont, lex)
 
 __ontology__ = None
 

@@ -49,6 +49,11 @@ def get_wn_key(k):
         log.info("no synset found for " + k)
         return None
 
+def ss_to_sk(ss):
+    if type(ss) is Synset:
+        return ss.lemmas()[0].key()
+    return ss
+
 class Normalize:
     @staticmethod
     def ont_name(name):
@@ -74,4 +79,11 @@ def all_hypernyms(synset):
     h = synset.hypernyms()
     if synset.pos() == wn.NOUN:
         h += synset.instance_hypernyms()
+    return h
+
+def all_hyponyms(synset):
+    """Since wordnet doesn't list all hyponyms as hyponyms, here is a cheat to get hyponyms."""
+    h = synset.hyponyms()
+    if synset.pos() == wn.NOUN:
+        h += synset.instance_hyponyms()
     return h

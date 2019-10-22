@@ -1,5 +1,5 @@
-from ..helpers import get_wn_key
-
+from ..helpers import get_wn_key, all_hyponyms
+import json
 
 class TripsType(object):
     """
@@ -13,7 +13,7 @@ class TripsType(object):
     # WARNING: arguments are currently not loaded.  There is a raw dict there
     """
 
-    def __init__(self, name, parent, children, words, wordnet, arguments, ont):
+    def __init__(self, name, parent, children, words, wordnet, arguments, sem, definitions, ont):
         self.__name = name.lower()
         if parent:
             self.__parent = parent.lower()
@@ -21,9 +21,11 @@ class TripsType(object):
             self.__parent = None
         self.__children = children
         self.__arguments = arguments
+        self.__sem = sem
         self.__words = [w.lower() for w in words]
         self.__wordnet = [w.lower() for w in wordnet]
-        self.__wordnet_keys = [get_wn_key(s) for s in self.__wordnet if get_wn_key(s)]
+        self.__wordnet_keys = None
+        self.__definitions = json.loads(json.dumps(definitions))
         self.__ont = ont
         # TODO: set numerical id
 
@@ -50,6 +52,14 @@ class TripsType(object):
         return self.__arguments[:]
 
     @property
+    def sem(self):
+        return self.__sem
+
+    @property
+    def definitions(self):
+        return self.__definitions[:]
+
+    @property
     def words(self):
         return self.__words[:]
 
@@ -58,7 +68,7 @@ class TripsType(object):
             max_depth = self.__ont.max_wn_depth
         clsr = set([k for k in self.wordnet_keys if k.pos() == pos or not pos])
         for key in self.wordnet_keys:
-            ext = list(key.closure(lambda s: [t for t in s.hyponyms() if self in self.__ont[t]], depth=max_depth))
+            ext = list(key.closure(lambda s: [t for t in all_hyponyms(s) if self in self.__ont[t]], depth=max_depth))
             clsr.update(ext)
         return clsr
 
@@ -81,6 +91,8 @@ class TripsType(object):
 
     @property
     def wordnet_keys(self):
+        if self.__wordnet_keys is None:
+            self.__wordnet_keys = [get_wn_key(s) for s in self.__wordnet if get_wn_key(s)]
         return self.__wordnet_keys[:]
 
     def __eq__(self, other):
@@ -141,12 +153,66 @@ class TripsType(object):
     def __xor__(self, other):
         return self.lcs(other)
 
-    def subsumes(self, other):
+    def subsumes(self, other, max_depth=-1, significant=False):
+        """messing with a method this fundamental is dangerous.  
+           Guarantee - node never changes, we only abstract out other"""
+        node = self
+        if significant:
+            node = self.significant()
+            other = other.significant()
+            if node == other:
+                return False # they are in the same class, so no subsumption
         if not other:
             return False # Is this a good idea?
         if other == "ont::root":
             return False
-        elif other in self.children:
+        elif significant and other in node.significant_children():
             return True
+        elif not significant and other in node.children:
+            return True
+        elif max_depth == 0:
+            return False
+        elif significant:
+            return node.subsumes(other.significant_parent(), max_depth=max_depth-1)
         else:
-            return self.subsumes(other.parent)
+            return node.subsumes(other.parent, max_depth=max_depth-1)
+
+    def differs_semantically_from(self, other):
+        if self.sem.differs_from(other.sem):
+            return True
+        argset = set([str(x) for x in self.arguments])
+        argset2 = set([str(x) for x in other.arguments])
+        return argset != argset2
+
+    def significant_parent(self):
+        """returns next significant ancestor"""
+        if self == "ont::root":
+            return self
+        return self.parent.significant()
+
+    def significant(self):
+        """returns next significant node on path to root, including self"""
+        if self == "ont::root":
+            return self
+        if self.differs_semantically_from(self.parent):
+            return self
+        return self.parent.significant()
+
+    def significant_ancestors(self):
+        """returns all significant ancestors"""
+        if self == "ont::root":
+            return []
+        if self.differs_semantically_from(self.parent):
+            return [self] + self.parent.significant_ancestors()
+        return self.parent.significant_ancestors()
+
+    def significant_children(self):
+        """return significant immediate children"""
+        return [c for c in self.children if self.differs_semantically_from(c)]
+
+    def significant_descendants(self):
+        """return all significant descendants"""
+        if not self.children:
+            return []
+        return sum([c.significant_descendants() for c in self.children], self.significant_children())
+

@@ -14,12 +14,13 @@ extras = {
 base = [
         "nltk",
         "jsontrips",
+        "graphviz"
     ]
 
 if __name__ == '__main__':
     setup(
         name="pytrips",
-        version="0.0.22",
+        version="0.3.0",
         author="Rik Bose",
         author_email="rbose@cs.rochester.edu",
         description="A simple python package for accessing the trips ontology and lexicon",

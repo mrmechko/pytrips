@@ -30,12 +30,16 @@ def get_wn_key(k):
     if not wn:
         log.info("wn not found when trying to lookup " + k)
         return None
+    if not k:
+        return None
     if type(k) is Synset:
         return k
     if k.startswith("wn::"):
         k = k[4:]
     while k.count(":") < 4:
         k += ":"
+    if "%" not in k:
+        return None
     try:
         res = wn.lemma_from_key(k).synset()
         if not res:
@@ -44,6 +48,11 @@ def get_wn_key(k):
     except WordNetError:
         log.info("no synset found for " + k)
         return None
+
+def ss_to_sk(ss):
+    if type(ss) is Synset:
+        return ss.lemmas()[0].key()
+    return ss
 
 class Normalize:
     @staticmethod
@@ -64,3 +73,17 @@ class Normalize:
     @staticmethod
     def spacy_pos(pos):
         return spacy_pos_labels.get(pos, pos.lower()[0])
+
+def all_hypernyms(synset):
+    """Since wordnet doesn't list all hypernyms as hypernyms, here is a cheat to get hypernyms."""
+    h = synset.hypernyms()
+    if synset.pos() == wn.NOUN:
+        h += synset.instance_hypernyms()
+    return h
+
+def all_hyponyms(synset):
+    """Since wordnet doesn't list all hyponyms as hyponyms, here is a cheat to get hyponyms."""
+    h = synset.hyponyms()
+    if synset.pos() == wn.NOUN:
+        h += synset.instance_hyponyms()
+    return h

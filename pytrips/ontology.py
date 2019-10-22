@@ -3,11 +3,78 @@ logger = logging.getLogger("pytrips")
 
 import jsontrips
 from collections import defaultdict as ddict
+import json
 import sys
 
-from .structures import TripsRestriction, TripsType
-from .helpers import wn, get_wn_key
+from .structures import TripsRestriction, TripsType, TripsSem
+from .helpers import wn, get_wn_key, ss_to_sk, all_hypernyms
 from nltk.corpus.reader.wordnet import Synset
+import string as _string
+from graphviz import Digraph
+
+class NodeGraph:
+    def __init__(self):
+        self.nodes = {}
+        self.edges = set()
+
+    def get_nth_label(self, n):
+        if n < 26:
+            return _string.ascii_uppercase[n]
+        return self.get_nth_label(n // 26) + self.get_nth_label(n % 26)
+
+    def get_label(self, name):
+        res = get_wn_key(name.split("::")[-1])
+        if res:
+            return res.name()
+        return name.lower()
+
+    def escape_label(self, s):
+        if not s:
+            return ""
+        if type(s) is str:
+            return "w::"+s
+        if type(s) is Synset:
+            return "wn::"+s.lemmas()[0].key()#.replace("%", ".")
+        if type(s) is TripsType:
+            return "ont::"+s.name
+        return "any::"+str(s)
+
+    def node(self, name):
+        name = self.escape_label(name)
+        if name in self.nodes:
+            return
+        label = self.get_label(name)
+        self.nodes[name] = label
+
+    def edge(self, source, target, label=""):
+        self.edges.add((self.escape_label(source), 
+                    self.escape_label(target), 
+                    self.escape_label(label)))
+
+    def source(self):
+        graph = Digraph()
+        for l, t in self.nodes.items():
+            graph.node(l, t)
+        for s, t, l in self.edges:
+            s, t = self.nodes[s], self.nodes[t]
+            if l:
+                graph.edge(s, t, l)
+            else:
+                graph.edge(s, t)
+        return graph.source
+
+    def json(self):
+        elements = []
+        for label, name in self.nodes.items():
+            elements.append({"data": {"id": name, "label": label}})
+        for source, target, label in self.edges:
+            source = self.nodes[source]
+            target = self.nodes[target]
+            edge = {"data": {"source": source, "target": target}}
+            if label:
+                edge["data"]["label"] = label
+            elements.append(edge)
+        return elements
 
 
 def _is_query_pair(x):
@@ -15,18 +82,20 @@ def _is_query_pair(x):
         return (type(x[0]) in set([str, TripsType])) and (type(x[1] == str))
     return False
 
-
-class Trips(object):
-    def __init__(self, ontology, lexicon):
-        ontology = ontology.values() # used to be a list, now is a dict
-        self.max_wn_depth = 5 # override this for more generous or controlled lookups
-        self._data = {}
-        self._data['root'] = TripsType("root", None, [], [], [], [], self)
-        revwords = ddict(set)
-        self._words = ddict(lambda: ddict(set))
-        self._wordnet_index = ddict(list)
+def load_json(ontology, lexicon):
+    self = Trips()
+    ontology = ontology.values() # used to be a list, now is a dict
+    self.max_wn_depth = 5 # override this for more generous or controlled lookups
+    self._data = {}
+    self._data['root'] = TripsType("root", None, [], [], [], [], TripsSem(type_="root", ont=self), [], self)
+    revwords = ddict(set)
+    self._words = ddict(lambda: ddict(set))
+    self._wordnet_index = ddict(list)
+    self.__definitions = ddict(list)
+    if lexicon:
         for word, entry_list in lexicon["words"].items():
             for entry in entry_list:
+                # Gather name, entries, pos
                 name = entry["name"].lower()
                 #cat = entry["cat"].lower()
                 entries = lexicon["entries"][entry["entry"]]
@@ -42,25 +111,41 @@ class Trips(object):
                     self._words[pos][word.lower()].add(c)
                     revwords[c].add((word+"."+pos).lower())
 
-        for s in ontology:
-            arguments = [TripsRestriction(x["role"],
-                                          x["restriction"],
-                                          str(x["optionality"]), self)
-                         for x in s.get('arguments', [])]
-            t = TripsType(
-                    s['name'],
-                    s.get('parent', "ROOT"),
-                    s.get('children', []),
-                    list(revwords[s['name'].lower()]),
-                    s.get('wordnet_sense_keys', []),
-                    arguments,
-                    self
-                )
-            self._data[t.name] = t
-            for k in s.get('wordnet_sense_keys', []):
-                k = get_wn_key(k)
-                if k:
-                    self._wordnet_index[k].append(t)
+    for s in ontology:
+        arguments = [TripsRestriction(x["role"],
+                                      x["restriction"],
+                                      str(x["optionality"]), self)
+                     for x in s.get('arguments', [])]
+        sem_ = s.get("sem", {})
+        _d = lambda y: {a.lower(): b for a, b in sem_.get(y, [])}
+        sem = TripsSem(_d("features"), _d("default"), sem_.get("type", "").lower(), self)
+        t = TripsType(
+                s['name'],
+                s.get('parent', "ROOT"),
+                s.get('children', []),
+                list(revwords[s['name'].lower()]),
+                s.get('wordnet_sense_keys', []),
+                arguments,
+                sem,
+                s.get('definitions', []),
+                self
+            )
+        self._data[t.name] = t
+        for k in s.get('wordnet_sense_keys', []):
+            #k = get_wn_key(k) # won't need to do this if I normalize sense_keys to start with
+            if k:
+                self._wordnet_index[k].append(t)
+
+        if t.definitions:
+            self.__definitions[json.dumps(t.definitions)].append(t.name)
+    return self
+
+class Trips(object):
+    def __init__(self):
+        self._data=None
+        self._words=None
+        self._wordnet_index=None
+        self.__definitions=None
 
     def get_trips_type(self, name):
         """Get the trips type associated with the name"""
@@ -89,23 +174,55 @@ class Trips(object):
             res += self.get_word(x, pos=pos)
         return list(set(res))
 
-    def get_wordnet(self, key, max_depth=-1):
+    def get_word_graph(self, word, pos=None):
+        graph = NodeGraph()
+        senses = wn.synsets(word, pos=pos)
+        if pos:
+            word = word + "." + pos
+        graph.node(word)
+        for s in senses:
+            n, graph = self.get_wordnet(s, graph=graph, parent=word)
+        return graph
+
+    def get_wordnet(self, key, max_depth=-1, graph=None, parent=None):
         """Get types provided by wordnet mappings"""
+        def _return(val):
+            if graph:
+                return (val, graph)
+            return val
+
+        if graph == True:
+            graph = NodeGraph()
+
         if max_depth == -1:
             max_depth = self.max_wn_depth
         elif max_depth == 0:
-            return []
+            return _return([])
+
         if type(key) is str:
             key = get_wn_key(key)
         if not key:
-            return []
-        if key in self._wordnet_index:
-            return self._wordnet_index[key][:]
+            return _return([])
+
+        if graph:
+            graph.node(key)
+            if parent:
+                graph.edge(parent, key)
+        res = []
+        if ss_to_sk(key) in self._wordnet_index:
+            res = self._wordnet_index[ss_to_sk(key)][:]
+            if graph:
+                for r in res:
+                    graph.node(r)
+                    graph.edge(key, r)
         else:
             res = set()
-            for k in key.hypernyms():
-                res.update(self.get_wordnet(k, max_depth=max_depth-1))
-            return list(res)
+            for k in all_hypernyms(key):
+                n = self.get_wordnet(k, max_depth=max_depth-1, graph=graph, parent=key)
+                if graph:
+                    n, graph = n
+                res.update(n)
+        return _return(res)
 
     def lookup(self, word, pos): #TODO what kind of information does this need in general?
         word = word.split("q::")[-1]
@@ -119,6 +236,11 @@ class Trips(object):
                 wnlook.update(self.get_wordnet(k))
         return {"lex" : w_look, "wn": list(wnlook)}
 
+    def get_definition(self, name):
+        """Get types that contain the given name in their definitions
+        """
+        name = name.split("d::")[-1].split("ont::")[-1].upper() #definitions are in uppercase, names are in lower case.
+        return list(set(["ont::"+df for lst in self.__definitions.keys() for df in self.__definitions[lst] if ""+name+"" in lst]))
 
     def __getitem__(self, key):
         """if the input is "w::x" lookup x as a word
@@ -146,6 +268,8 @@ class Trips(object):
             return self.lookup(key, pos=pos)
         elif key.startswith("p::"):
             return self.get_part_of_speech(key, lex=pos)
+        elif key.startswith("d::") and self.get_trips_type(key.split("d::")[-1]):
+            return self.get_definition(key)
         else:
             return self.get_trips_type(key)
 
@@ -155,7 +279,9 @@ class Trips(object):
         return self._data.values()
 
 
-def load():
+def load(skip_lexicon=False, log=False):
+    if not log:
+        logging.disable(logging.CRITICAL)
     logger.info("Loading ontology")
 
     ont = jsontrips.ontology()
@@ -163,15 +289,18 @@ def load():
     logger.info("Loaded ontology")
     logger.info("Loading lexicon")
     
-    lex = jsontrips.lexicon()
+    if skip_lexicon:
+        lex = {}
+    else:
+        lex = jsontrips.lexicon()
 
     logger.info("Loaded lexicon")
-    return Trips(ont, lex)
+    return load_json(ont, lex)
 
 __ontology__ = None
 
-def get_ontology():
+def get_ontology(skip_lexicon=False, log=False):
     global __ontology__
     if not __ontology__:
-        __ontology__ = load()
+        __ontology__ = load(skip_lexicon=skip_lexicon, log=log)
     return __ontology__

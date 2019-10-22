@@ -13,7 +13,7 @@ extras = {
 
 base = [
         "nltk",
-        "jsontrips",
+        "jsontrips>0.1.26",
         "graphviz"
     ]
 

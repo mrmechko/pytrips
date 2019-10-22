@@ -49,6 +49,11 @@ def get_wn_key(k):
         log.info("no synset found for " + k)
         return None
 
+def ss_to_sk(ss):
+    if type(ss) is Synset:
+        return ss.lemmas()[0].key()
+    return ss
+
 class Normalize:
     @staticmethod
     def ont_name(name):

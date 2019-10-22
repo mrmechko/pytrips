@@ -7,7 +7,7 @@ import json
 import sys
 
 from .structures import TripsRestriction, TripsType, TripsSem
-from .helpers import wn, get_wn_key, all_hypernyms
+from .helpers import wn, get_wn_key, ss_to_sk, all_hypernyms
 from nltk.corpus.reader.wordnet import Synset
 import string as _string
 from graphviz import Digraph
@@ -132,9 +132,9 @@ def load_json(ontology, lexicon):
             )
         self._data[t.name] = t
         for k in s.get('wordnet_sense_keys', []):
-            k = get_wn_key(k)
+            #k = get_wn_key(k) # won't need to do this if I normalize sense_keys to start with
             if k:
-                self._wordnet_index[k].append(t)
+                self._wordnet_index[ss_to_sk(k)].append(t)
 
         if t.definitions:
             self.__definitions[json.dumps(t.definitions)].append(t.name)
@@ -209,8 +209,8 @@ class Trips(object):
             if parent:
                 graph.edge(parent, key)
         res = []
-        if key in self._wordnet_index:
-            res = self._wordnet_index[key][:]
+        if ss_to_sk(key) in self._wordnet_index:
+            res = self._wordnet_index[ss_to_sk(key)][:]
             if graph:
                 for r in res:
                     graph.node(r)

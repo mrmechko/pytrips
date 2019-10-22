@@ -24,7 +24,7 @@ class TripsType(object):
         self.__sem = sem
         self.__words = [w.lower() for w in words]
         self.__wordnet = [w.lower() for w in wordnet]
-        self.__wordnet_keys = [get_wn_key(s) for s in self.__wordnet if get_wn_key(s)]
+        self.__wordnet_keys = None
         self.__definitions = json.loads(json.dumps(definitions))
         self.__ont = ont
         # TODO: set numerical id
@@ -91,6 +91,8 @@ class TripsType(object):
 
     @property
     def wordnet_keys(self):
+        if self.__wordnet_keys is None:
+            self.__wordnet_keys = [get_wn_key(s) for s in self.__wordnet if get_wn_key(s)]
         return self.__wordnet_keys[:]
 
     def __eq__(self, other):

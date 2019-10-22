@@ -134,7 +134,7 @@ def load_json(ontology, lexicon):
         for k in s.get('wordnet_sense_keys', []):
             #k = get_wn_key(k) # won't need to do this if I normalize sense_keys to start with
             if k:
-                self._wordnet_index[ss_to_sk(k)].append(t)
+                self._wordnet_index[k].append(t)
 
         if t.definitions:
             self.__definitions[json.dumps(t.definitions)].append(t.name)

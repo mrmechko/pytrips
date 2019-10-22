@@ -80,3 +80,10 @@ def all_hypernyms(synset):
     if synset.pos() == wn.NOUN:
         h += synset.instance_hypernyms()
     return h
+
+def all_hyponyms(synset):
+    """Since wordnet doesn't list all hyponyms as hyponyms, here is a cheat to get hyponyms."""
+    h = synset.hyponyms()
+    if synset.pos() == wn.NOUN:
+        h += synset.instance_hyponyms()
+    return h

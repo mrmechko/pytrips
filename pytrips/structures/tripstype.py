@@ -1,4 +1,4 @@
-from ..helpers import get_wn_key
+from ..helpers import get_wn_key, all_hyponyms
 import json
 
 class TripsType(object):
@@ -68,7 +68,7 @@ class TripsType(object):
             max_depth = self.__ont.max_wn_depth
         clsr = set([k for k in self.wordnet_keys if k.pos() == pos or not pos])
         for key in self.wordnet_keys:
-            ext = list(key.closure(lambda s: [t for t in s.hyponyms() if self in self.__ont[t]], depth=max_depth))
+            ext = list(key.closure(lambda s: [t for t in all_hyponyms(s) if self in self.__ont[t]], depth=max_depth))
             clsr.update(ext)
         return clsr
 

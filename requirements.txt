@@ -1,3 +1,4 @@
 nltk
 thesoulshell>=0.0.2
 jsontrips>=0.1.26
+graphviz

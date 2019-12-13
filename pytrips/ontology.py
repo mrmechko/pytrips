@@ -146,6 +146,7 @@ class Trips(object):
         self._words=None
         self._wordnet_index=None
         self.__definitions=None
+        self.__query_cache = {}
 
     def get_trips_type(self, name):
         """Get the trips type associated with the name"""
@@ -248,6 +249,12 @@ class Trips(object):
         if the input is "wn::x" lookup x as a wordnet sense
         else lookup as an ont type.
         """
+        if key not in self.__query_cache:
+            self.__query_cache[key] = self.make_query(key)
+            
+        return self.__query_cache[key]
+
+    def make_query(self, key):
         pos = None
         if _is_query_pair(key):
             key, pos = key

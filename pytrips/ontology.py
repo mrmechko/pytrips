@@ -5,12 +5,17 @@ import jsontrips
 from collections import defaultdict as ddict
 import json
 import sys
+import re
 
 from .structures import TripsRestriction, TripsType, TripsSem
 from .helpers import wn, get_wn_key, ss_to_sk, all_hypernyms
 from nltk.corpus.reader.wordnet import Synset
 import string as _string
 from graphviz import Digraph
+
+_gls_re = re.compile("-WN\d{5}$")
+_gls = lambda x: re.match(_gls_re, x) is not None
+
 
 class NodeGraph:
     def __init__(self):
@@ -82,7 +87,7 @@ def _is_query_pair(x):
         return (type(x[0]) in set([str, TripsType])) and (type(x[1] == str))
     return False
 
-def load_json(ontology, lexicon):
+def load_json(ontology, lexicon, use_gloss=False):
     self = Trips()
     ontology = ontology.values() # used to be a list, now is a dict
     self.max_wn_depth = 5 # override this for more generous or controlled lookups
@@ -101,6 +106,9 @@ def load_json(ontology, lexicon):
                 entries = lexicon["entries"][entry["entry"]]
                 pos = entries['pos'].lower()
                 # TODO: incorporate the lexicon
+                if not use_gloss:
+                    # skip gloss-derived entries if not use_gloss
+                    entries['senses'] = [s for s in entries['senses'] if not _gls(s["lf_parent"])]
                 if len(entries['senses']) > 1:
                     logger.info(entries["name"] + " has " + str(len(entries["senses"])) + " senses")
                 for values in entries["senses"]:
@@ -112,6 +120,8 @@ def load_json(ontology, lexicon):
                     revwords[c].add((word+"."+pos).lower())
 
     for s in ontology:
+        if not use_gloss and _gls(s):
+            continue
         arguments = [TripsRestriction(x["role"],
                                       x["restriction"],
                                       str(x["optionality"]), self)
@@ -286,7 +296,7 @@ class Trips(object):
         return self._data.values()
 
 
-def load(skip_lexicon=False, log=False):
+def load(skip_lexicon=False, use_gloss=False, log=False):
     if not log:
         logging.disable(logging.CRITICAL)
     logger.info("Loading ontology")
@@ -302,12 +312,12 @@ def load(skip_lexicon=False, log=False):
         lex = jsontrips.lexicon()
 
     logger.info("Loaded lexicon")
-    return load_json(ont, lex)
+    return load_json(ont, lex, use_gloss=use_gloss)
 
 __ontology__ = None
 
-def get_ontology(skip_lexicon=False, log=False):
+def get_ontology(skip_lexicon=False, use_gloss=False, log=False):
     global __ontology__
     if not __ontology__:
-        __ontology__ = load(skip_lexicon=skip_lexicon, log=log)
+        __ontology__ = load(skip_lexicon=skip_lexicon, use_gloss=use_gloss, log=log)
     return __ontology__

@@ -149,6 +149,18 @@ class TripsType(object):
                 lcs = p
         return lcs
 
+    def path_len(self, other):
+        return self.depth + other.depth - 2*(self ^ other).depth
+
+    def wup(self, other):
+        lcsd = (self ^ other).depth
+        return 2 * lcsd/(self.depth + other.depth)
+
+    def cosine(self, other):
+        import math
+        lcsd = (self ^ other).depth
+        return lcsd / math.sqrt(self.depth * other.depth)
+
     def __xor__(self, other):
         return self.lcs(other)
 

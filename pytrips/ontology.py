@@ -13,8 +13,8 @@ from nltk.corpus.reader.wordnet import Synset
 import string as _string
 from graphviz import Digraph
 
-_gls_re = re.compile("-WN\d{5}$")
-_gls = lambda x: re.match(_gls_re, x) is not None
+_gls_re = re.compile(".*-wn\d{5}$")
+_gls = lambda x: re.match(_gls_re, x)
 
 
 class NodeGraph:
@@ -108,7 +108,9 @@ def load_json(ontology, lexicon, use_gloss=False):
                 # TODO: incorporate the lexicon
                 if not use_gloss:
                     # skip gloss-derived entries if not use_gloss
-                    entries['senses'] = [s for s in entries['senses'] if not _gls(s["lf_parent"])]
+                    entries['senses'] = [s for s in entries.get('senses', []) if not _gls(s.get("lf_parent", ""))]
+                else:
+                    entries["senses"] = entries.get("senses", [])
                 if len(entries['senses']) > 1:
                     logger.info(entries["name"] + " has " + str(len(entries["senses"])) + " senses")
                 for values in entries["senses"]:
@@ -120,10 +122,15 @@ def load_json(ontology, lexicon, use_gloss=False):
                     revwords[c].add((word+"."+pos).lower())
 
     for s in ontology:
-        if not use_gloss and _gls(s):
-            continue
+        if not use_gloss:
+            if _gls(s["name"].lower()):
+                # skip gloss-derived times
+                continue
+            if s.get("children"):
+                # filter out gloss-derived children
+                s["children"] = [x for x in s["children"] if not _gls(x)]
         arguments = [TripsRestriction(x["role"],
-                                      x["restriction"],
+                                      x.get("restriction", []),
                                       str(x["optionality"]), self)
                      for x in s.get('arguments', [])]
         sem_ = s.get("sem", {})
@@ -314,10 +321,10 @@ def load(skip_lexicon=False, use_gloss=False, log=False):
     logger.info("Loaded lexicon")
     return load_json(ont, lex, use_gloss=use_gloss)
 
-__ontology__ = None
+__ontology__ = {}
 
 def get_ontology(skip_lexicon=False, use_gloss=False, log=False):
     global __ontology__
-    if not __ontology__:
-        __ontology__ = load(skip_lexicon=skip_lexicon, use_gloss=use_gloss, log=log)
-    return __ontology__
+    if not __ontology__.get(use_gloss):
+        __ontology__[use_gloss] = load(skip_lexicon=skip_lexicon, use_gloss=use_gloss, log=log)
+    return __ontology__[use_gloss]

@@ -14,7 +14,7 @@ import string as _string
 from graphviz import Digraph
 
 _gls_re = re.compile(".*-wn\d{5}$")
-_gls = lambda x: re.match(_gls_re, x)
+_gls = lambda x: re.match(_gls_re, x.lower())
 
 
 class NodeGraph:
@@ -304,6 +304,11 @@ class Trips(object):
 
 
 def load(skip_lexicon=False, use_gloss=False, log=False):
+    if use_gloss:
+        print("loading gloss-derived ontology")
+    else:
+        print("loading regular ontology")
+
     if not log:
         logging.disable(logging.CRITICAL)
     logger.info("Loading ontology")
@@ -323,8 +328,10 @@ def load(skip_lexicon=False, use_gloss=False, log=False):
 
 __ontology__ = {}
 
-def get_ontology(skip_lexicon=False, use_gloss=False, log=False):
+def get_ontology(skip_lexicon=False, use_gloss=False, single=False, log=False):
     global __ontology__
     if not __ontology__.get(use_gloss):
         __ontology__[use_gloss] = load(skip_lexicon=skip_lexicon, use_gloss=use_gloss, log=log)
+        if single:
+            __ontology__[not use_gloss] = __ontology__[use_gloss]
     return __ontology__[use_gloss]

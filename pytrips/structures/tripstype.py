@@ -158,6 +158,8 @@ class TripsType(object):
 
     def cosine(self, other):
         import math
+        if not other:
+            return 0
         lcsd = (self ^ other).depth
         return lcsd / math.sqrt(self.depth * other.depth)
 
@@ -219,7 +221,7 @@ class TripsType(object):
 
     def significant_children(self):
         """return significant immediate children"""
-        return [c for c in self.children if self.differs_semantically_from(c)]
+        return [c for c in self.children if c and self.differs_semantically_from(c)]
 
     def significant_descendants(self):
         """return all significant descendants"""

@@ -1,7 +1,12 @@
 from ..helpers import get_wn_key, all_hyponyms
+from anytree import NodeMixin, RenderTree
 import json
 
-class TripsType(object):
+
+class AbstractTripsType(object):
+    pass
+
+class TripsType(AbstractTripsType, NodeMixin):
     """
     Note: in order for the operations to work, at least one of the
     types must explicitly be a TripsType
@@ -28,6 +33,9 @@ class TripsType(object):
         self.__definitions = json.loads(json.dumps(definitions))
         self.__ont = ont
         # TODO: set numerical id
+
+    def subtree_string(self, max_depth=1000):
+        return "\n".join(["%s%s" % (a, c.name) for a, b, c in RenderTree(self, maxlevel=max_depth)])
 
     @property
     def depth(self):

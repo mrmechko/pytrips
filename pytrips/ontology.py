@@ -11,6 +11,7 @@ from .structures import TripsRestriction, TripsType, TripsSem
 from .helpers import wn, get_wn_key, ss_to_sk, all_hypernyms
 from nltk.corpus.reader.wordnet import Synset
 import string as _string
+
 from graphviz import Digraph
 
 _gls_re = re.compile(".*-wn\d{5}$")
@@ -28,9 +29,10 @@ class NodeGraph:
         return self.get_nth_label(n // 26) + self.get_nth_label(n % 26)
 
     def get_label(self, name):
-        res = get_wn_key(name.split("::")[-1])
-        if res:
-            return res.name()
+        #res = get_wn_key(name.split("::")[-1])
+        #if res:
+        #    return res.name()
+        print(name)
         return name.lower()
 
     def escape_label(self, s):
@@ -44,6 +46,9 @@ class NodeGraph:
             return "ont::"+s.name
         return "any::"+str(s)
 
+    def escape_dot(self, x):
+        return x.replace(":", "_").replace("%", ".")
+
     def node(self, name):
         name = self.escape_label(name)
         if name in self.nodes:
@@ -56,17 +61,27 @@ class NodeGraph:
                     self.escape_label(target), 
                     self.escape_label(label)))
 
-    def source(self):
-        graph = Digraph()
+    def graph(self, format='svg'):
+        graph = Digraph(format=format)
         for l, t in self.nodes.items():
-            graph.node(l, t)
+            shape = "rectangle"
+            if t.startswith("w::"):
+                t = t[3:]
+                shape = "diamond"
+            elif t.startswith("wn::"):
+                t = t[4:]
+                shape = "oval"
+            graph.node(self.escape_dot(l), t, shape=shape)
         for s, t, l in self.edges:
             s, t = self.nodes[s], self.nodes[t]
             if l:
-                graph.edge(s, t, l)
+                graph.edge(self.escape_dot(s), self.escape_dot(t), l)
             else:
-                graph.edge(s, t)
-        return graph.source
+                graph.edge(self.escape_dot(s), self.escape_dot(t))
+        return graph
+
+    def source(self):
+        return self.graph().source
 
     def json(self):
         elements = []

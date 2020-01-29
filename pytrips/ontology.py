@@ -102,8 +102,8 @@ def _is_query_pair(x):
         return (type(x[0]) in set([str, TripsType])) and (type(x[1] == str))
     return False
 
-def load_json(ontology, lexicon, use_gloss=False):
-    self = Trips()
+def load_json(ontology, lexicon, use_gloss=False, stop=[], go=[]):
+    self = Trips(stop=stop, go=go)
     ontology = ontology.values() # used to be a list, now is a dict
     self.max_wn_depth = 5 # override this for more generous or controlled lookups
     self._data = {}
@@ -173,12 +173,18 @@ def load_json(ontology, lexicon, use_gloss=False):
     return self
 
 class Trips(object):
-    def __init__(self):
+    def __init__(self, stop=None, go=None):
         self._data=None
         self._words=None
         self._wordnet_index=None
         self.__definitions=None
         self.__query_cache = {}
+        if stop:
+            if not go:
+                go = []
+            self.stop = [s for s in stop if s not in go]
+        else:
+            self.stop = []
 
     def get_trips_type(self, name):
         """Get the trips type associated with the name"""
@@ -217,8 +223,12 @@ class Trips(object):
             n, graph = self.get_wordnet(s, graph=graph, parent=word)
         return graph
 
-    def get_wordnet(self, key, max_depth=-1, graph=None, parent=None):
+    def get_wordnet(self, key, max_depth=-1, graph=None, parent=None, use_stop=True):
         """Get types provided by wordnet mappings"""
+        if use_stop:
+            stop = self.stop
+        else:
+            stop = []
         def _return(val):
             if graph:
                 return (val, graph)
@@ -250,7 +260,7 @@ class Trips(object):
                     graph.edge(key, r)
         else:
             res = set()
-            for k in all_hypernyms(key):
+            for k in all_hypernyms(key, stop):
                 n = self.get_wordnet(k, max_depth=max_depth-1, graph=graph, parent=key)
                 if graph:
                     n, graph = n
@@ -329,6 +339,8 @@ def load(skip_lexicon=False, use_gloss=False, log=False):
     logger.info("Loading ontology")
 
     ont = jsontrips.ontology()
+    stop = [x.split() for x in jsontrips.stoplist().split() if not x.split().startswith(";")]
+    go = [x.split() for x in jsontrips.stoplist().split() if not x.split().startswith(";")]
 
     logger.info("Loaded ontology")
     logger.info("Loading lexicon")
@@ -339,7 +351,7 @@ def load(skip_lexicon=False, use_gloss=False, log=False):
         lex = jsontrips.lexicon()
 
     logger.info("Loaded lexicon")
-    return load_json(ont, lex, use_gloss=use_gloss)
+    return load_json(ont, lex, use_gloss=use_gloss, stop=stop, go=go)
 
 __ontology__ = {}
 

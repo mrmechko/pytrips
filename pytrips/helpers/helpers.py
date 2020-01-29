@@ -74,16 +74,16 @@ class Normalize:
     def spacy_pos(pos):
         return spacy_pos_labels.get(pos, pos.lower()[0])
 
-def all_hypernyms(synset):
+def all_hypernyms(synset, stop=[]):
     """Since wordnet doesn't list all hypernyms as hypernyms, here is a cheat to get hypernyms."""
     h = synset.hypernyms()
     if synset.pos() == wn.NOUN:
         h += synset.instance_hypernyms()
-    return h
+    return [x for x in h if x.lemmas()[0].key() not in stop]
 
-def all_hyponyms(synset):
+def all_hyponyms(synset, stop=[]):
     """Since wordnet doesn't list all hyponyms as hyponyms, here is a cheat to get hyponyms."""
     h = synset.hyponyms()
     if synset.pos() == wn.NOUN:
         h += synset.instance_hyponyms()
-    return h
+    return [x for x in h if x.lemmas()[0].key() not in stop]

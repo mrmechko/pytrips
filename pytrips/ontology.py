@@ -349,8 +349,6 @@ def load(skip_lexicon=False, use_gloss=False, log=False):
     logger.info("Loading ontology")
 
     ont = jsontrips.ontology()
-    stop = [x.strip().lower() for x in jsontrips.stoplist().split() if not x.strip().startswith(";")]
-    go = [x.strip().lower() for x in jsontrips.golist().split() if not x.strip().startswith(";")]
 
     logger.info("Loaded ontology")
     logger.info("Loading lexicon")
@@ -361,7 +359,7 @@ def load(skip_lexicon=False, use_gloss=False, log=False):
         lex = jsontrips.lexicon()
 
     logger.info("Loaded lexicon")
-    return load_json(ont, lex, use_gloss=use_gloss, stop=stop, go=go)
+    return load_json(ont, lex, use_gloss=use_gloss, stop=jsontrips.stoplist(), go=jsontrips.golist())
 
 __ontology__ = {}
 

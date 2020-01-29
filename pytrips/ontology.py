@@ -41,7 +41,7 @@ class NodeGraph:
         if type(s) is str:
             return "w::"+s
         if type(s) is Synset:
-            return "wn::"+s.lemmas()[0].key()#.replace("%", ".")
+            return "wn::"+s.lemmas()[0].key().lower()#.replace("%", ".")
         if type(s) is TripsType:
             return "ont::"+s.name
         return "any::"+str(s)
@@ -217,7 +217,7 @@ class Trips(object):
         graph = NodeGraph()
         senses = wn.synsets(word, pos=pos)
         if use_stop:
-            senses = [s for s in senses if s.lemmas()[0].key() not in self.stop]
+            senses = [s for s in senses if s.lemmas()[0].key().lower() not in self.stop]
         if pos:
             word = word + "." + pos
         graph.node(word)
@@ -260,7 +260,7 @@ class Trips(object):
                 for r in res:
                     graph.node(r)
                     graph.edge(key, r)
-        elif (key.lemmas()[0].key() not in self.stop) or not use_stop:
+        elif (key.lemmas()[0].key().lower() not in self.stop) or not use_stop:
             res = set()
             for k in all_hypernyms(key):
                 n = self.get_wordnet(k, max_depth=max_depth-1, graph=graph, parent=key)
@@ -341,8 +341,8 @@ def load(skip_lexicon=False, use_gloss=False, log=False):
     logger.info("Loading ontology")
 
     ont = jsontrips.ontology()
-    stop = [x.strip() for x in jsontrips.stoplist().strip() if not x.strip().startswith(";")]
-    go = [x.strip() for x in jsontrips.golist().strip() if not x.strip().startswith(";")]
+    stop = [x.strip().lower() for x in jsontrips.stoplist().split() if not x.strip().startswith(";")]
+    go = [x.strip().lower() for x in jsontrips.golist().split() if not x.strip().startswith(";")]
 
     logger.info("Loaded ontology")
     logger.info("Loading lexicon")

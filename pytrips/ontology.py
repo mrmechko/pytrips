@@ -217,7 +217,7 @@ class Trips(object):
         graph = NodeGraph()
         senses = wn.synsets(word, pos=pos)
         if use_stop:
-            senses = [s for s in senses if s.lemmas()[0].key() in self.stop]
+            senses = [s for s in senses if s.lemmas()[0].key() not in self.stop]
         if pos:
             word = word + "." + pos
         graph.node(word)

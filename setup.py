@@ -20,7 +20,7 @@ base = [
 if __name__ == '__main__':
     setup(
         name="pytrips",
-        version="0.5.8",
+        version="0.5.9",
         author="Rik Bose",
         author_email="rbose@cs.rochester.edu",
         description="A simple python package for accessing the trips ontology and lexicon",

@@ -342,7 +342,7 @@ def load(skip_lexicon=False, use_gloss=False, log=False):
 
     ont = jsontrips.ontology()
     stop = [x.strip() for x in jsontrips.stoplist().strip() if not x.strip().startswith(";")]
-    go = [x.strip() for x in jsontrips.stoplist().strip() if not x.strip().startswith(";")]
+    go = [x.strip() for x in jsontrips.golist().strip() if not x.strip().startswith(";")]
 
     logger.info("Loaded ontology")
     logger.info("Loading lexicon")

@@ -213,14 +213,16 @@ class Trips(object):
             res += self.get_word(x, pos=pos)
         return list(set(res))
 
-    def get_word_graph(self, word, pos=None):
+    def get_word_graph(self, word, pos=None, use_stop=True):
         graph = NodeGraph()
         senses = wn.synsets(word, pos=pos)
+        if use_stop:
+            senses = [s for s in senses if s.lemmas()[0].key() in self.stop]
         if pos:
             word = word + "." + pos
         graph.node(word)
         for s in senses:
-            n, graph = self.get_wordnet(s, graph=graph, parent=word)
+            n, graph = self.get_wordnet(s, graph=graph, parent=word, use_stop=use_stop)
         return graph
 
     def get_wordnet(self, key, max_depth=-1, graph=None, parent=None, use_stop=True):
@@ -339,8 +341,8 @@ def load(skip_lexicon=False, use_gloss=False, log=False):
     logger.info("Loading ontology")
 
     ont = jsontrips.ontology()
-    stop = [x.split() for x in jsontrips.stoplist().split() if not x.split().startswith(";")]
-    go = [x.split() for x in jsontrips.stoplist().split() if not x.split().startswith(";")]
+    stop = [x.strip() for x in jsontrips.stoplist().strip() if not x.strip().startswith(";")]
+    go = [x.strip() for x in jsontrips.stoplist().strip() if not x.strip().startswith(";")]
 
     logger.info("Loaded ontology")
     logger.info("Loading lexicon")

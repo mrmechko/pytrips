@@ -260,9 +260,9 @@ class Trips(object):
                 for r in res:
                     graph.node(r)
                     graph.edge(key, r)
-        else:
+        elif (key.lemmas()[0].key() in self.stop) or not use_stop:
             res = set()
-            for k in all_hypernyms(key, stop):
+            for k in all_hypernyms(key):
                 n = self.get_wordnet(k, max_depth=max_depth-1, graph=graph, parent=key)
                 if graph:
                     n, graph = n

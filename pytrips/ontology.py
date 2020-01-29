@@ -19,9 +19,10 @@ _gls = lambda x: re.match(_gls_re, x.lower())
 
 
 class NodeGraph:
-    def __init__(self):
+    def __init__(self, ont=None):
         self.nodes = {}
         self.edges = set()
+        self.ont = ont
 
     def get_nth_label(self, n):
         if n < 26:
@@ -32,7 +33,6 @@ class NodeGraph:
         #res = get_wn_key(name.split("::")[-1])
         #if res:
         #    return res.name()
-        print(name)
         return name.lower()
 
     def escape_label(self, s):
@@ -64,14 +64,17 @@ class NodeGraph:
     def graph(self, format='svg'):
         graph = Digraph(format=format)
         for l, t in self.nodes.items():
-            shape = "rectangle"
+            attrs = {"shape": "rectangle"}
             if t.startswith("w::"):
                 t = t[3:]
-                shape = "diamond"
+                attrs["shape"] = "diamond"
             elif t.startswith("wn::"):
                 t = t[4:]
-                shape = "oval"
-            graph.node(self.escape_dot(l), t, shape=shape)
+                attrs["shape"] = "oval"
+                if self.ont and (t in self.ont.stop):
+                    attrs["style"] = "filled"
+                    attrs["fillcolor"] = "red"
+            graph.node(self.escape_dot(l), t, **attrs)
         for s, t, l in self.edges:
             s, t = self.nodes[s], self.nodes[t]
             if l:
@@ -183,8 +186,10 @@ class Trips(object):
             if not go:
                 go = []
             self.stop = [s for s in stop if s not in go]
+            self.use_stop = True
         else:
             self.stop = []
+            self.use_stop = False
 
     def get_trips_type(self, name):
         """Get the trips type associated with the name"""
@@ -213,7 +218,9 @@ class Trips(object):
             res += self.get_word(x, pos=pos)
         return list(set(res))
 
-    def get_word_graph(self, word, pos=None, use_stop=True):
+    def get_word_graph(self, word, pos=None, use_stop=None):
+        if use_stop is None:
+            use_stop = self.use_stop
         graph = NodeGraph()
         senses = wn.synsets(word, pos=pos)
         if use_stop:
@@ -227,6 +234,8 @@ class Trips(object):
 
     def get_wordnet(self, key, max_depth=-1, graph=None, parent=None, use_stop=True):
         """Get types provided by wordnet mappings"""
+        if use_stop is None:
+            use_stop = self.use_stop
         if use_stop:
             stop = self.stop
         else:
@@ -263,7 +272,7 @@ class Trips(object):
         elif (key.lemmas()[0].key().lower() not in self.stop) or not use_stop:
             res = set()
             for k in all_hypernyms(key):
-                n = self.get_wordnet(k, max_depth=max_depth-1, graph=graph, parent=key)
+                n = self.get_wordnet(k, max_depth=max_depth-1, graph=graph, parent=key, use_stop=use_stop)
                 if graph:
                     n, graph = n
                 res.update(n)
@@ -295,7 +304,6 @@ class Trips(object):
         """
         if key not in self.__query_cache:
             self.__query_cache[key] = self.make_query(key)
-            
         return self.__query_cache[key]
 
     def make_query(self, key):

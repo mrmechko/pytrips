@@ -229,17 +229,11 @@ class Trips(object):
             word = word + "." + pos
         graph.node(word)
         for s in senses:
-            n, graph = self.get_wordnet(s, graph=graph, parent=word, use_stop=use_stop)
+            n, graph = self.get_wordnet(s, graph=graph, parent=word)
         return graph
 
-    def get_wordnet(self, key, max_depth=-1, graph=None, parent=None, use_stop=True):
+    def get_wordnet(self, key, max_depth=-1, graph=None, parent=None):
         """Get types provided by wordnet mappings"""
-        if use_stop is None:
-            use_stop = self.use_stop
-        if use_stop:
-            stop = self.stop
-        else:
-            stop = []
         def _return(val):
             if graph:
                 return (val, graph)
@@ -269,16 +263,19 @@ class Trips(object):
                 for r in res:
                     graph.node(r)
                     graph.edge(key, r)
-        elif (key.lemmas()[0].key().lower() not in self.stop) or not use_stop:
+        else: #if (key.lemmas()[0].key().lower() not in self.stop) or not use_stop:
             res = set()
             for k in all_hypernyms(key):
-                n = self.get_wordnet(k, max_depth=max_depth-1, graph=graph, parent=key, use_stop=use_stop)
+                n = self.get_wordnet(k, max_depth=max_depth-1, graph=graph, parent=key)
                 if graph:
                     n, graph = n
                 res.update(n)
         return _return(res)
 
-    def lookup(self, word, pos): #TODO what kind of information does this need in general?
+    def lookup(self, word, pos, use_stop=None):
+        #TODO what kind of information does this need in general?
+        if use_stop is None:
+            use_stop = self.use_stop
         word = word.split("q::")[-1]
         #1 get word lookup
         w_look = self.get_word(word, pos=pos)
@@ -286,6 +283,8 @@ class Trips(object):
         wnlook = set()
         if wn:
             keys = wn.synsets(word, pos=pos)
+            if use_stop:
+                keys = [s for s in keys if s.lemmas()[0].key().lower() not in self.stop]
             for k in keys:
                 wnlook.update(self.get_wordnet(k))
         return {"lex" : w_look, "wn": list(wnlook)}

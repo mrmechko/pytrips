@@ -72,9 +72,15 @@ class NodeGraph:
             if t.startswith("w::"):
                 t = t[3:]
                 attrs["shape"] = "diamond"
+                attrs["style"] = "filled"
+                attrs["fillcolor"] = "lightgray"
             elif t.startswith("wn::"):
                 t = t[4:]
                 attrs["shape"] = "oval"
+                attrs["tooltip"] = get_wn_key(t).definition()
+            elif t.startswith("ont::"):
+                attrs["style"] = "filled"
+                attrs["fillcolor"] = "lightblue"
             for a, v in over.items():
                 attrs[a] = v
             graph.node(self.escape_dot(l), t, **attrs)

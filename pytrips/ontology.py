@@ -21,6 +21,7 @@ _gls = lambda x: re.match(_gls_re, x.lower())
 class NodeGraph:
     def __init__(self, ont=None):
         self.nodes = {}
+        self.node_attrs = {}
         self.edges = set()
         self.ont = ont
 
@@ -49,12 +50,14 @@ class NodeGraph:
     def escape_dot(self, x):
         return x.replace(":", "_").replace("%", ".")
 
-    def node(self, name):
+    def node(self, name, attrs=None):
         name = self.escape_label(name)
         if name in self.nodes:
             return
         label = self.get_label(name)
         self.nodes[name] = label
+        if attrs:
+            self.node_attrs[name] = attrs
 
     def edge(self, source, target, label=""):
         self.edges.add((self.escape_label(source), 
@@ -64,6 +67,7 @@ class NodeGraph:
     def graph(self, format='svg'):
         graph = Digraph(format=format)
         for l, t in self.nodes.items():
+            over = self.node_attrs.get(t, {})
             attrs = {"shape": "rectangle"}
             if t.startswith("w::"):
                 t = t[3:]
@@ -71,9 +75,8 @@ class NodeGraph:
             elif t.startswith("wn::"):
                 t = t[4:]
                 attrs["shape"] = "oval"
-                if self.ont and (t in self.ont.stop):
-                    attrs["style"] = "filled"
-                    attrs["fillcolor"] = "red"
+            for a, v in over.items():
+                attrs[a] = v
             graph.node(self.escape_dot(l), t, **attrs)
         for s, t, l in self.edges:
             s, t = self.nodes[s], self.nodes[t]
@@ -222,14 +225,21 @@ class Trips(object):
         if use_stop is None:
             use_stop = self.use_stop
         graph = NodeGraph()
-        senses = wn.synsets(word, pos=pos)
-        if use_stop:
-            senses = [s for s in senses if s.lemmas()[0].key().lower() not in self.stop]
+        senses = wn.lemmas(word, pos=pos)
         if pos:
             word = word + "." + pos
         graph.node(word)
+        for l in senses:
+            attrs = {}
+            if l.key().lower() in self.stop:
+                attrs["style"] = "filled"
+                attrs["fillcolor"] = "red"
+            graph.node(l.key(), attrs=attrs)
+            graph.edge(word, l.key())
+        if use_stop:
+            senses = [s for s in senses if s.key().lower() not in self.stop]
         for s in senses:
-            n, graph = self.get_wordnet(s, graph=graph, parent=word)
+            n, graph = self.get_wordnet(s.synset(), graph=graph, parent=s.key())
         return graph
 
     def get_wordnet(self, key, max_depth=-1, graph=None, parent=None):
@@ -282,9 +292,10 @@ class Trips(object):
         #2 get wordnet
         wnlook = set()
         if wn:
-            keys = wn.synsets(word, pos=pos)
+            keys = wn.lemmas(word, pos=pos)
             if use_stop:
-                keys = [s for s in keys if s.lemmas()[0].key().lower() not in self.stop]
+                keys = [s for s in keys if s.key().lower() not in self.stop]
+            keys = [s.synset() for s in keys]
             for k in keys:
                 wnlook.update(self.get_wordnet(k))
         return {"lex" : w_look, "wn": list(wnlook)}

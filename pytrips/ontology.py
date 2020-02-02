@@ -5,108 +5,19 @@ import jsontrips
 from collections import defaultdict as ddict
 import json
 import sys
-import re
 
 from .structures import TripsRestriction, TripsType, TripsSem
 from .helpers import wn, get_wn_key, ss_to_sk, all_hypernyms
 from nltk.corpus.reader.wordnet import Synset
 import string as _string
+from .nodegraph import NodeGraph
 
-from graphviz import Digraph
+import re
 
 _gls_re = re.compile(".*-wn\d{5}$")
 _gls = lambda x: re.match(_gls_re, x.lower())
 
 
-class NodeGraph:
-    def __init__(self, ont=None):
-        self.nodes = {}
-        self.node_attrs = {}
-        self.edges = set()
-        self.ont = ont
-
-    def get_nth_label(self, n):
-        if n < 26:
-            return _string.ascii_uppercase[n]
-        return self.get_nth_label(n // 26) + self.get_nth_label(n % 26)
-
-    def get_label(self, name):
-        #res = get_wn_key(name.split("::")[-1])
-        #if res:
-        #    return res.name()
-        return name.lower()
-
-    def escape_label(self, s):
-        if not s:
-            return ""
-        if type(s) is str:
-            return "w::"+s
-        if type(s) is Synset:
-            return "wn::"+s.lemmas()[0].key().lower()#.replace("%", ".")
-        if type(s) is TripsType:
-            return "ont::"+s.name
-        return "any::"+str(s)
-
-    def escape_dot(self, x):
-        return x.replace(":", "_").replace("%", ".")
-
-    def node(self, name, attrs=None):
-        name = self.escape_label(name)
-        if name in self.nodes:
-            return
-        label = self.get_label(name)
-        self.nodes[name] = label
-        if attrs:
-            self.node_attrs[name] = attrs
-
-    def edge(self, source, target, label=""):
-        self.edges.add((self.escape_label(source), 
-                    self.escape_label(target), 
-                    self.escape_label(label)))
-
-    def graph(self, format='svg'):
-        graph = Digraph(format=format)
-        for l, t in self.nodes.items():
-            over = self.node_attrs.get(t, {})
-            attrs = {"shape": "rectangle"}
-            if t.startswith("w::"):
-                t = t[3:]
-                attrs["shape"] = "diamond"
-                attrs["style"] = "filled"
-                attrs["fillcolor"] = "lightgray"
-            elif t.startswith("wn::"):
-                t = t[4:]
-                attrs["shape"] = "oval"
-                attrs["tooltip"] = get_wn_key(t).definition()
-            elif t.startswith("ont::"):
-                attrs["style"] = "filled"
-                attrs["fillcolor"] = "lightblue"
-            for a, v in over.items():
-                attrs[a] = v
-            graph.node(self.escape_dot(l), t, **attrs)
-        for s, t, l in self.edges:
-            s, t = self.nodes[s], self.nodes[t]
-            if l:
-                graph.edge(self.escape_dot(s), self.escape_dot(t), l)
-            else:
-                graph.edge(self.escape_dot(s), self.escape_dot(t))
-        return graph
-
-    def source(self):
-        return self.graph().source
-
-    def json(self):
-        elements = []
-        for label, name in self.nodes.items():
-            elements.append({"data": {"id": name, "label": label}})
-        for source, target, label in self.edges:
-            source = self.nodes[source]
-            target = self.nodes[target]
-            edge = {"data": {"source": source, "target": target}}
-            if label:
-                edge["data"]["label"] = label
-            elements.append(edge)
-        return elements
 
 
 def _is_query_pair(x):
@@ -248,7 +159,7 @@ class Trips(object):
             n, graph = self.get_wordnet(s.synset(), graph=graph, parent=s.key())
         return graph
 
-    def get_wordnet(self, key, max_depth=-1, graph=None, parent=None):
+    def get_wordnet(self, key, max_depth=-1, graph=None, parent=None, relation=None):
         """Get types provided by wordnet mappings"""
         def _return(val):
             if graph:
@@ -271,7 +182,13 @@ class Trips(object):
         if graph:
             graph.node(key)
             if parent:
-                graph.edge(parent, key)
+                if relation:
+                    attr = {}
+                    if relation == "instance-hypernym":
+                        attr["color"] = "red"
+                    graph.edge(parent, key, attrs=attr)
+                else:
+                    graph.edge(parent, key)
         res = []
         if ss_to_sk(key) in self._wordnet_index:
             res = self._wordnet_index[ss_to_sk(key)][:]
@@ -281,8 +198,8 @@ class Trips(object):
                     graph.edge(key, r)
         else: #if (key.lemmas()[0].key().lower() not in self.stop) or not use_stop:
             res = set()
-            for k in all_hypernyms(key):
-                n = self.get_wordnet(k, max_depth=max_depth-1, graph=graph, parent=key)
+            for k, i in all_hypernyms(key):
+                n = self.get_wordnet(k, max_depth=max_depth-1, graph=graph, parent=key, relation=i)
                 if graph:
                     n, graph = n
                 res.update(n)

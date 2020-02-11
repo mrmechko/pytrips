@@ -271,9 +271,9 @@ class Trips(object):
 
 def load(skip_lexicon=False, use_gloss=False, log=False):
     if use_gloss:
-        print("loading gloss-derived ontology")
+        logger.info("loading gloss-derived ontology")
     else:
-        print("loading regular ontology")
+        logger.info("loading regular ontology")
 
     if not log:
         logging.disable(logging.CRITICAL)

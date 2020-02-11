@@ -18,8 +18,6 @@ _gls_re = re.compile(".*-wn\d{5}$")
 _gls = lambda x: re.match(_gls_re, x.lower())
 
 
-
-
 def _is_query_pair(x):
     if type(x) is tuple and len(x) == 2:
         return (type(x[0]) in set([str, TripsType])) and (type(x[1] == str))
@@ -141,7 +139,7 @@ class Trips(object):
     def get_word_graph(self, word, pos=None, use_stop=None):
         if use_stop is None:
             use_stop = self.use_stop
-        graph = NodeGraph()
+        graph = NodeGraph(default_node_attr={"shape": "rectangle"})
         senses = wn.lemmas(word, pos=pos)
         if pos:
             word = word + "." + pos

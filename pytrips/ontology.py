@@ -130,7 +130,7 @@ class Trips(object):
     def all_words(self):
         if not self._all_words:
             self._all_words = sum([list(self._words[p]) for p in self._words], [])
-        return self._all_wors
+        return self._all_words
 
     def get_part_of_speech(self, pos, lex):
         """Lookup all possible types or lexical items for the given part of speech"""

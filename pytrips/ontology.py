@@ -99,6 +99,7 @@ class Trips(object):
         self._words=None
         self._wordnet_index=None
         self.__definitions=None
+        self._all_words = None
         self.__query_cache = {}
         if stop:
             if not go:
@@ -124,6 +125,12 @@ class Trips(object):
             for pos, words in self._words.items():
                 index.update(words[word])
         return [self[x] for x in index if self[x]]
+
+    @property
+    def all_words(self):
+        if not self._all_words:
+            self._all_words = sum([list(self._words[p]) for p in self._words], [])
+        return self._all_wors
 
     def get_part_of_speech(self, pos, lex):
         """Lookup all possible types or lexical items for the given part of speech"""
@@ -270,13 +277,13 @@ class Trips(object):
 
 
 def load(skip_lexicon=False, use_gloss=False, log=False):
+    if not log:
+        logging.disable(logging.CRITICAL)
     if use_gloss:
         logger.info("loading gloss-derived ontology")
     else:
         logger.info("loading regular ontology")
 
-    if not log:
-        logging.disable(logging.CRITICAL)
     logger.info("Loading ontology")
 
     ont = jsontrips.ontology()

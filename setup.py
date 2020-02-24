@@ -13,8 +13,10 @@ extras = {
 
 base = [
         "nltk",
-        "jsontrips>=0.1.26",
-        "graphviz"
+        "thesoulshell>=0.0.2",
+        "jsontrips>=0.1.34",
+        "graphviz",
+        "anytree",
     ]
 
 if __name__ == '__main__':

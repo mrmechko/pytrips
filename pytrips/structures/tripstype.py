@@ -121,12 +121,26 @@ class TripsType(AbstractTripsType, NodeMixin):
                 raise NotImplemented
         return other.subsumes(self)
 
+    def __le__(self, other):
+        if type(other) is str:
+            other = self.__ont[other]
+            if type(other) is not TripsType:
+                raise NotImplemented
+        return other.subsumes(self) or self.name == other.name
+
     def __gt__(self, other):
         if type(other) is str:
             other = self.__ont[other]
             if type(other) is not TripsType:
                 raise NotImplemented
         return self.subsumes(other)
+
+    def __ge__(self, other):
+        if type(other) is str:
+            other = self.__ont[other]
+            if type(other) is not TripsType:
+                raise NotImplemented
+        return self.subsumes(other) or self.name == other.name
 
     def __str__(self):
         return "ont::" + self.name

@@ -7,7 +7,7 @@ from graphviz import Digraph
 
 
 class NodeGraph:
-    def __init__(self, default_node_attr=None, default_edge_attr=None, no_escape=False, subgraphs=None, name="graph", attrs=None):
+    def __init__(self, default_node_attr=None, default_edge_attr=None, no_escape=False, subgraphs=None, name="graph", attrs=None, label=None):
         self.name = name
         self.nodes = {}
         self.node_attrs = {}
@@ -26,6 +26,8 @@ class NodeGraph:
         self.attrs = {}
         if attrs:
             self.attrs = attrs
+        if label:
+            self.attrs["label"] = label
 
     def get_nth_label(self, n):
         if n < 26:

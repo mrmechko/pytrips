@@ -9,4 +9,4 @@ logging.basicConfig(
 from .ontology import load
 
 
-__VERSION__ = "0.5.18"
+__VERSION__ = "0.5.19"

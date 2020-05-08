@@ -211,6 +211,7 @@ class Trips(object):
         return _return(res)
 
     def lookup(self, word, pos, use_stop=None):
+        """pos should be one of "n" (noun) "v" (verb), "a" (adjective), "r" (adverb), "s" (satellite)"""
         #TODO what kind of information does this need in general?
         if use_stop is None:
             use_stop = self.use_stop

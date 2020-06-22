@@ -48,6 +48,9 @@ class NodeGraph:
             return s
         if not s:
             return ""
+        if type(s) is str and (s.startswith("w::") or s.startswith("wn::") or s.startswith("ont::")):
+            # already namespaced
+            return s
         if type(s) is str:
             return "w::"+s
         if type(s) is Synset:
@@ -71,11 +74,13 @@ class NodeGraph:
         if attrs:
             self.node_attrs[name] = attrs
 
-    def edge(self, source, target, label="", attrs=None, port=None):
+    def edge(self, source, target, label="", attrs=None, port=None, noloop=False):
         #print(self.edges, self.nodes.keys())
         #print(source, target, label)
         source = self.escape_label(source)
         target = self.escape_label(target)
+        if noloop and source == target:
+            return
         e = (source, target, self.escape_label(label))
         self.edges.add(e)
         if attrs:
@@ -112,6 +117,7 @@ class NodeGraph:
             #print("sg name:", sg.name)
             graph.subgraph(graph=sg)
         for s, t, l in self.edges:
+            #print(s, t, l)
             a = self.edge_attrs.get((s,t,l), self.default_edge_attr)
             #s, t = self.nodes[s], self.nodes[t]
             #print(self.escape_dot(s), "->", self.escape_dot(t))

@@ -153,11 +153,13 @@ class Trips(object):
         graph.node(word)
         for l in senses:
             attrs = {}
+            key = "wn::%s" % l.key()
+            label = l.key()
             if l.key().lower() in self.stop:
                 attrs["style"] = "filled"
                 attrs["fillcolor"] = "red"
-            graph.node(l.key(), attrs=attrs)
-            graph.edge(word, l.key())
+            graph.node(key, attrs=attrs, label=label)
+            graph.edge(word, key)
         if use_stop:
             senses = [s for s in senses if s.key().lower() not in self.stop]
         for s in senses:
@@ -193,7 +195,7 @@ class Trips(object):
                         attr["color"] = "red"
                     graph.edge(parent, key, attrs=attr)
                 else:
-                    graph.edge(parent, key)
+                    graph.edge("wn::"+parent, key, noloop=True)
         res = []
         if ss_to_sk(key) in self._wordnet_index:
             res = self._wordnet_index[ss_to_sk(key)][:]

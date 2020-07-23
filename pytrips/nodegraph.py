@@ -109,6 +109,8 @@ class NodeGraph:
             elif t.startswith("ont::"):
                 attrs["style"] = "filled"
                 attrs["fillcolor"] = "lightblue"
+                attrs["href"] = "https://www.cs.rochester.edu/research/trips/lexicon/data/%s.xml" % t.replace("ont::", "ONT%3A%3A")
+                attrs["target"] = "_none"
             attrs = dict(attrs, **over)
             #print(l, t, attrs, over)
             graph.node(self.escape_dot(l), t, **attrs)

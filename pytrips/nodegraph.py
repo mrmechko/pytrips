@@ -103,7 +103,8 @@ class NodeGraph:
                 attrs["fillcolor"] = "lightgray"
             elif t.startswith("wn::"):
                 t = t[4:]
-                attrs["shape"] = "oval"
+                if not "shape" in attrs:
+                    attrs["shape"] = "oval"
                 attrs["tooltip"] = get_wn_key(t).definition()
             elif t.startswith("ont::"):
                 attrs["style"] = "filled"

@@ -158,7 +158,7 @@ class Trips(object):
             if l.key().lower() in self.stop:
                 attrs["style"] = "filled"
                 attrs["fillcolor"] = "red"
-            graph.node(key, attrs=attrs, label=label)
+            graph.node(key, attrs=attrs, label=key)
             graph.edge(word, key)
         if use_stop:
             senses = [s for s in senses if s.key().lower() not in self.stop]
